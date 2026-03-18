@@ -131,7 +131,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       - name: Publish to Modrinth
-        if: ${{ secrets.MODRINTH_TOKEN != '' }}
+        if: ${{ vars.MODRINTH_PROJECT_ID != '' }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           VERSION_TYPE="${{ steps.version.outputs.version_type }}"
