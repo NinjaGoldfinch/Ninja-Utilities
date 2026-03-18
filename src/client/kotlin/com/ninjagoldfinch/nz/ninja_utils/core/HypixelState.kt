@@ -1,5 +1,7 @@
 package com.ninjagoldfinch.nz.ninja_utils.core
 
+import com.ninjagoldfinch.nz.ninja_utils.features.stats.SlayerTracker
+
 /**
  * Singleton holding the player's current state on Hypixel.
  * Updated by the Hypixel Mod API and parsers.
@@ -22,7 +24,7 @@ object HypixelState {
     val isOnPrivateIsland: Boolean get() = isInSkyBlock && mode == "dynamic"
     val isLocationUnknown: Boolean get() = isOnHypixel && serverType == null
     val isInLobby: Boolean get() = isOnHypixel && serverType.equals("LOBBY", ignoreCase = true)
-    val isInLimbo: Boolean get() = isOnHypixel && serverType.equals("LIMBO", ignoreCase = true)
+    val isInLimbo: Boolean get() = isOnHypixel && (serverType.equals("LIMBO", ignoreCase = true) || serverName.equals("limbo", ignoreCase = true))
 
     // Party info
     var partyLeader: String? = null
@@ -39,6 +41,10 @@ object HypixelState {
     var currentArea: String? = null  // Finer-grained than mode (e.g., "Dwarven Mines" vs "mining_3")
     var skyblockDetectedViaScoreboard: Boolean = false
 
+    // Garden-specific data (updated by ScoreboardParser)
+    var copper: Int = 0
+    var compost: Int = 0
+
     fun update(serverName: String?, serverType: String?, mode: String?, map: String?, lobbyName: String?) {
         val previousIsland = this.currentIsland
         this.serverName = serverName
@@ -46,6 +52,16 @@ object HypixelState {
         this.mode = mode
         this.map = map
         this.lobbyName = lobbyName
+
+        // Clear scoreboard-derived data when leaving SkyBlock
+        if (!isInSkyBlock) {
+            currentArea = null
+            purse = 0
+            bits = 0
+            copper = 0
+            compost = 0
+            SlayerTracker.reset()
+        }
 
         if (currentIsland != previousIsland) {
             EventBus.post(IslandChangeEvent(previousIsland, currentIsland))
@@ -69,5 +85,7 @@ object HypixelState {
         bits = 0
         currentArea = null
         skyblockDetectedViaScoreboard = false
+        copper = 0
+        compost = 0
     }
 }

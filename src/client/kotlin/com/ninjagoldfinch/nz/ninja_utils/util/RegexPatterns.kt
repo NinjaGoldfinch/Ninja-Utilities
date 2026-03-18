@@ -12,6 +12,10 @@ object RegexPatterns {
     val SB_DATE = Regex("""(Early|Late)? ?(\w+) (\d+)(?:st|nd|rd|th)""")
     val OBJECTIVE = Regex("""Objective: (.+)""")
 
+    // Garden patterns
+    val COPPER = Regex("""Copper: ([\d,]+)""")
+    val COMPOST = Regex("""Compost: ([\d,]+)""")
+
     // Chat patterns
     val SKILL_XP = Regex("""\+?([\d,.]+) ([\w][\w ]*?) \(([\d,.]+)/([\d,.]+)\)""")
     val COIN_CHANGE = Regex("""([+-][\d,.]+) coins? \((.+)\)""")

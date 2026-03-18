@@ -1,6 +1,7 @@
 package com.ninjagoldfinch.nz.ninja_utils.logging
 
 import com.ninjagoldfinch.nz.ninja_utils.core.HypixelState
+import com.ninjagoldfinch.nz.ninja_utils.core.SkyBlockIsland
 import com.ninjagoldfinch.nz.ninja_utils.features.stats.PingTracker
 import com.ninjagoldfinch.nz.ninja_utils.features.stats.SkillTracker
 import com.ninjagoldfinch.nz.ninja_utils.features.stats.SlayerTracker
@@ -35,6 +36,12 @@ object DebugOverlay {
         lines.add(HudLine("Hello", helloAge, valueColor = VALUE_COLOR))
         lines.add(HudLine("Location", locAge, valueColor = VALUE_COLOR))
         lines.add(HudLine("SB Fallback", s.skyblockDetectedViaScoreboard.toString(), valueColor = boolColor(s.skyblockDetectedViaScoreboard)))
+
+        // Garden-specific debug info
+        if (s.currentIsland == SkyBlockIsland.GARDEN) {
+            lines.add(HudLine("Copper", s.copper.toString(), valueColor = VALUE_COLOR))
+            lines.add(HudLine("Compost", s.compost.toString(), valueColor = VALUE_COLOR))
+        }
 
         val slayer = SlayerTracker.activeQuest
         if (slayer != null) {

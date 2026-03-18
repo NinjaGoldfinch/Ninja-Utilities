@@ -1,5 +1,9 @@
 # Ninja Utilities
 
+![Discord](https://img.shields.io/discord/1194919292437807163)
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/NinjaGoldfinch/Ninja-Utilities/total)
+![Modrinth Downloads](https://img.shields.io/modrinth/dt/pVY1CRc2)
+
 A client-side Fabric mod for Hypixel SkyBlock that provides a configurable HUD, stat tracking, and quality-of-life features.
 
 ## Features

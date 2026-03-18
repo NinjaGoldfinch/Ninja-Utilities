@@ -3,6 +3,7 @@ package com.ninjagoldfinch.nz.ninja_utils.parsers
 import com.ninjagoldfinch.nz.ninja_utils.config.DebugCategory
 import com.ninjagoldfinch.nz.ninja_utils.core.EventBus
 import com.ninjagoldfinch.nz.ninja_utils.core.HypixelState
+import com.ninjagoldfinch.nz.ninja_utils.core.SkyBlockIsland
 import com.ninjagoldfinch.nz.ninja_utils.core.SlayerCompleteEvent
 import com.ninjagoldfinch.nz.ninja_utils.core.SlayerSpawnedEvent
 import com.ninjagoldfinch.nz.ninja_utils.features.stats.SlayerTracker
@@ -66,6 +67,8 @@ object ScoreboardParser {
         var slayerQuest: String? = null
         var slayerProgress: String? = null
         var slayerBossSpawned = false
+        var copper: Int? = null
+        var compost: Int? = null
         var parsedObjective: String? = null
         var sbDate: String? = null
         var inSlayerSection = false
@@ -102,6 +105,15 @@ object ScoreboardParser {
             RegexPatterns.OBJECTIVE.find(line)?.let {
                 parsedObjective = it.groupValues[1].trim()
             }
+            // Garden-specific patterns
+            if (HypixelState.currentIsland == SkyBlockIsland.GARDEN) {
+                RegexPatterns.COPPER.find(line)?.let {
+                    copper = it.groupValues[1].replace(",", "").toIntOrNull()
+                }
+                RegexPatterns.COMPOST.find(line)?.let {
+                    compost = it.groupValues[1].replace(",", "").toIntOrNull()
+                }
+            }
             RegexPatterns.SB_DATE.find(line)?.let {
                 val prefix = it.groupValues[1].let { p -> if (p.isNotBlank()) "$p " else "" }
                 sbDate = "$prefix${it.groupValues[2]} ${it.groupValues[3]}"
@@ -114,6 +126,8 @@ object ScoreboardParser {
         purse?.let { HypixelState.purse = it }
         bits?.let { HypixelState.bits = it }
         location?.let { HypixelState.currentArea = it }
+        copper?.let { HypixelState.copper = it }
+        compost?.let { HypixelState.compost = it }
         SlayerTracker.updateFromScoreboard(slayerQuest)
 
         // Detect boss spawn from scoreboard

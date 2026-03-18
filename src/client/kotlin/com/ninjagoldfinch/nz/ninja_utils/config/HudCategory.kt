@@ -51,6 +51,16 @@ class HudCategory {
         @ConfigEntry(id = "showDebugOverlay", translation = "ninja_utils.config.hud.showDebugOverlay")
         @JvmField var showDebugOverlay: Boolean = false
 
+        @ConfigOption.Separator(value = "ninja_utils.config.hud.garden")
+
+        @ConfigEntry(id = "showCopper", translation = "ninja_utils.config.hud.showCopper")
+        @Comment(value = "Show Copper count (Garden only)")
+        @JvmField var showCopper: Boolean = false
+
+        @ConfigEntry(id = "showCompost", translation = "ninja_utils.config.hud.showCompost")
+        @Comment(value = "Show Compost count (Garden only)")
+        @JvmField var showCompost: Boolean = false
+
         @ConfigOption.Separator(value = "ninja_utils.config.hud.appearance")
 
         @ConfigEntry(id = "hudScale", translation = "ninja_utils.config.hud.hudScale")
