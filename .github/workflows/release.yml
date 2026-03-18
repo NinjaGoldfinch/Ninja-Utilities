@@ -2,7 +2,8 @@ name: Release
 
 on:
   push:
-    branches: [main, development]
+    branches: [development]
+    tags: ['v*']
 
 permissions:
   contents: write
@@ -30,24 +31,15 @@ jobs:
       - name: Determine version
         id: version
         run: |
-          # Read base version from gradle.properties
           BASE_VERSION=$(grep '^mod_version=' gradle.properties | cut -d'=' -f2)
-          BRANCH="${GITHUB_REF_NAME}"
 
-          if [ "$BRANCH" = "main" ]; then
-            # Stable release: count existing stable tags to bump patch
-            PATCH=$(git tag -l "v${BASE_VERSION%.*}.*" --sort=-v:refname | grep -v beta | head -1 | sed 's/v[0-9]*\.[0-9]*\.//' || echo "-1")
-            if [ -z "$PATCH" ] || [ "$PATCH" = "-1" ]; then
-              VERSION="$BASE_VERSION"
-            else
-              NEXT_PATCH=$((PATCH + 1))
-              MAJOR_MINOR="${BASE_VERSION%.*}"
-              VERSION="${MAJOR_MINOR}.${NEXT_PATCH}"
-            fi
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            # Stable release: use the pushed tag directly
+            VERSION="${GITHUB_REF_NAME#v}"
             echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-            echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+            echo "tag=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
-            echo "name=v$VERSION" >> "$GITHUB_OUTPUT"
+            echo "name=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
           else
             # Beta release: count beta tags for this base version
             BETA_COUNT=$(git tag -l "v${BASE_VERSION}-beta.*" | wc -l)
