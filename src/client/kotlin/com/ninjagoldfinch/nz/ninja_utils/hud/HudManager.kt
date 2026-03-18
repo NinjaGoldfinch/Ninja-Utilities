@@ -37,6 +37,7 @@ object HudManager {
     const val PADDING = 4
     const val LINE_HEIGHT = 11
     const val LABEL_SEPARATOR = ": "
+    const val MAIN_PANEL_ID = "main"
 
     fun register(element: HudElement) {
         elements.add(element)
@@ -62,7 +63,6 @@ object HudManager {
             SkillTracker.recordXpGain(event.skill, event.xpGain)
         }
 
-        // Load saved positions and assign defaults for new elements
         HudPositions.load()
         HudPositions.initDefaults(elements)
         HudPositions.save()
@@ -75,7 +75,22 @@ object HudManager {
         logger.info("HUD system initialized with ${elements.size} elements")
     }
 
+    /** All registered elements (excluding debug overlay). */
+    fun getMainElements(): List<HudElement> = elements.filter { it.id != "debug_overlay" }
+
+    /** All registered elements including debug overlay. */
     fun getElements(): List<HudElement> = elements
+
+    /** Collect all lines from enabled main elements into one list. */
+    fun collectMainLines(): List<HudLine> {
+        val lines = mutableListOf<HudLine>()
+        for (element in elements) {
+            if (element.id == "debug_overlay") continue
+            if (!element.isEnabled()) continue
+            lines.addAll(element.getLines())
+        }
+        return lines
+    }
 
     private fun renderAll(drawContext: DrawContext, renderTickCounter: RenderTickCounter) {
         val renderStart = System.nanoTime()
@@ -101,10 +116,24 @@ object HudManager {
             drawContext.matrices.scale(scale, scale)
         }
 
-        if (HudCategory.combinedHud) {
-            renderCombined(drawContext, scale)
-        } else {
-            renderIndividual(drawContext, scale)
+        // Main HUD — single combined panel
+        val mainLines = collectMainLines()
+        if (mainLines.isNotEmpty()) {
+            val pos = HudPositions.getPosition(MAIN_PANEL_ID)
+            val x = if (scale != 1.0f) (pos.x / scale).toInt() else pos.x
+            val y = if (scale != 1.0f) (pos.y / scale).toInt() else pos.y
+            renderPanel(drawContext, mainLines, x, y)
+        }
+
+        // Debug overlay — separate panel
+        if (DebugHudElement.isEnabled()) {
+            val debugLines = DebugHudElement.getLines()
+            if (debugLines.isNotEmpty()) {
+                val pos = HudPositions.getPosition(DebugHudElement.id)
+                val x = if (scale != 1.0f) (pos.x / scale).toInt() else pos.x
+                val y = if (scale != 1.0f) (pos.y / scale).toInt() else pos.y
+                renderPanel(drawContext, debugLines, x, y)
+            }
         }
 
         if (scale != 1.0f) {
@@ -114,61 +143,16 @@ object HudManager {
         PerformanceMonitor.recordRenderTime(System.nanoTime() - renderStart)
     }
 
-    private fun renderIndividual(drawContext: DrawContext, scale: Float) {
-        for (element in elements) {
-            if (!element.isEnabled()) continue
-            val lines = element.getLines()
-            if (lines.isEmpty()) continue
-            val pos = HudPositions.getPosition(element.id)
-            val x = if (scale != 1.0f) (pos.x / scale).toInt() else pos.x
-            val y = if (scale != 1.0f) (pos.y / scale).toInt() else pos.y
-            renderPanel(drawContext, lines, x, y)
-        }
-    }
-
-    private fun renderCombined(drawContext: DrawContext, scale: Float) {
-        val allLines = mutableListOf<HudLine>()
-        for (element in elements) {
-            if (!element.isEnabled()) continue
-            // Skip debug overlay in combined mode — it renders separately
-            if (element.id == "debug_overlay") continue
-            allLines.addAll(element.getLines())
-        }
-        if (allLines.isNotEmpty()) {
-            val pos = HudPositions.getPosition("combined")
-            val x = if (scale != 1.0f) (pos.x / scale).toInt() else pos.x
-            val y = if (scale != 1.0f) (pos.y / scale).toInt() else pos.y
-            renderPanel(drawContext, allLines, x, y)
-        }
-
-        // Debug overlay still renders independently in combined mode
-        val debug = DebugHudElement
-        if (debug.isEnabled()) {
-            val lines = debug.getLines()
-            if (lines.isNotEmpty()) {
-                val pos = HudPositions.getPosition(debug.id)
-                val x = if (scale != 1.0f) (pos.x / scale).toInt() else pos.x
-                val y = if (scale != 1.0f) (pos.y / scale).toInt() else pos.y
-                renderPanel(drawContext, lines, x, y)
-            }
-        }
-    }
-
-    /**
-     * Renders a HUD panel with background and text lines.
-     */
     fun renderPanel(context: DrawContext, lines: List<HudLine>, x: Int, y: Int) {
         val textRenderer = MinecraftClient.getInstance().textRenderer
         val (panelWidth, panelHeight) = getPanelSize(lines)
 
-        // Draw background
         val bgAlpha = (HudCategory.hudBackgroundOpacity * 255).toInt().coerceIn(0, 255)
         if (bgAlpha > 0) {
-            val bgColor = bgAlpha shl 24 // black with configured opacity
+            val bgColor = bgAlpha shl 24
             context.fill(x, y, x + panelWidth, y + panelHeight, bgColor)
         }
 
-        // Draw each line
         for ((i, line) in lines.withIndex()) {
             val lineY = y + PADDING + i * LINE_HEIGHT
             val labelText = "${line.label}$LABEL_SEPARATOR"
@@ -179,9 +163,6 @@ object HudManager {
         }
     }
 
-    /**
-     * Returns the panel dimensions (width, height) for given lines.
-     */
     fun getPanelSize(lines: List<HudLine>): Pair<Int, Int> {
         val textRenderer = MinecraftClient.getInstance().textRenderer
         var maxWidth = 0

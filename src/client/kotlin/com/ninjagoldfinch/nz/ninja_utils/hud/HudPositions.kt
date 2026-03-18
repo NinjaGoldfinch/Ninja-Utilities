@@ -8,8 +8,8 @@ import net.fabricmc.loader.api.FabricLoader
 import java.nio.file.Files
 
 /**
- * Persists per-element HUD positions to a JSON file.
- * Default position for new elements is (5, 5), stacked vertically.
+ * Persists HUD panel positions to a JSON file.
+ * Two panels: "main" (combined HUD) and "debug_overlay".
  */
 object HudPositions {
     private val logger = ModLogger.category("HudPositions")
@@ -54,25 +54,14 @@ object HudPositions {
     }
 
     /**
-     * Assigns default stacked positions for elements that don't have saved positions yet.
-     * Debug overlay defaults to right side; combined HUD defaults to top-left.
+     * Assigns default positions for panels that don't have saved positions yet.
      */
     fun initDefaults(elements: List<HudElement>) {
-        var nextY = 5
-        for (element in elements) {
-            if (element.id !in positions) {
-                if (element.id == "debug_overlay") {
-                    // Default to top-right area (will be adjusted at render time if needed)
-                    positions[element.id] = ElementPosition(500, 5)
-                } else {
-                    positions[element.id] = ElementPosition(5, nextY)
-                    nextY += 17 // LINE_HEIGHT + padding
-                }
-            }
+        if (HudManager.MAIN_PANEL_ID !in positions) {
+            positions[HudManager.MAIN_PANEL_ID] = ElementPosition(5, 5)
         }
-        // Default position for combined mode
-        if ("combined" !in positions) {
-            positions["combined"] = ElementPosition(5, 5)
+        if ("debug_overlay" !in positions) {
+            positions["debug_overlay"] = ElementPosition(500, 5)
         }
     }
 }

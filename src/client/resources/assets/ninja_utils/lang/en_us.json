@@ -27,11 +27,8 @@
   "ninja_utils.config.hud.showTps": "Show TPS",
   "ninja_utils.config.hud.showDebugOverlay": "Show Debug Overlay",
   "ninja_utils.config.hud.appearance": "Appearance",
-  "ninja_utils.config.hud.combinedHud": "Combined HUD",
   "ninja_utils.config.hud.hudScale": "HUD Scale",
   "ninja_utils.config.hud.hudBackgroundOpacity": "Background Opacity",
-  "ninja_utils.config.hud.hudX": "Panel X Position",
-  "ninja_utils.config.hud.hudY": "Panel Y Position",
 
   "ninja_utils.config.skyblock": "SkyBlock",
   "ninja_utils.config.skyblock.scoreboard": "Scoreboard",
