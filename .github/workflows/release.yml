@@ -40,6 +40,7 @@ jobs:
             echo "tag=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
             echo "name=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+            echo "version_type=release" >> "$GITHUB_OUTPUT"
           else
             # Beta release: count beta tags for this base version
             BETA_COUNT=$(git tag -l "v${BASE_VERSION}-beta.*" | wc -l)
@@ -49,21 +50,36 @@ jobs:
             echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
             echo "prerelease=true" >> "$GITHUB_OUTPUT"
             echo "name=v$VERSION (Beta)" >> "$GITHUB_OUTPUT"
+            echo "version_type=beta" >> "$GITHUB_OUTPUT"
           fi
 
           echo "Resolved version: $VERSION"
 
+      - name: Rename build artifacts
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          for mc_dir in versions/*/; do
+            mc_ver=$(basename "$mc_dir")
+            libs_dir="${mc_dir}build/libs"
+            [ -d "$libs_dir" ] || continue
+            for jar in "$libs_dir"/*.jar; do
+              [[ "$jar" == *-sources.jar ]] && continue
+              [[ -f "$jar" ]] || continue
+              new_name="$libs_dir/ninja-utilities-${VERSION}+${mc_ver}.jar"
+              if [ "$jar" != "$new_name" ]; then
+                mv "$jar" "$new_name"
+                echo "Renamed: $(basename "$jar") -> $(basename "$new_name")"
+              fi
+            done
+          done
+
       - name: Create tag (beta only)
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
-        id: create_tag
         run: |
           TAG="${{ steps.version.outputs.tag }}"
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "created=false" >> "$GITHUB_OUTPUT"
-          else
+          if ! git rev-parse "$TAG" >/dev/null 2>&1; then
             git tag "$TAG"
             git push origin "$TAG"
-            echo "created=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Check if release exists
@@ -78,7 +94,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       - name: Generate changelog
-        if: steps.check_release.outputs.exists == 'false'
         run: |
           # Get the previous tag for changelog diff
           PREV_TAG=$(git tag -l 'v*' --sort=-v:refname | grep -v "${{ steps.version.outputs.tag }}" | head -1 || true)
@@ -114,3 +129,48 @@ jobs:
             --clobber
         env:
           GH_TOKEN: ${{ github.token }}
+
+      - name: Publish to Modrinth
+        if: ${{ secrets.MODRINTH_TOKEN != '' }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          VERSION_TYPE="${{ steps.version.outputs.version_type }}"
+          TAG="${{ steps.version.outputs.tag }}"
+
+          CHANGELOG=$(cat /tmp/changelog.txt)
+
+          # Collect game versions from build directories
+          GAME_VERSIONS=$(for d in versions/*/; do basename "$d"; done | jq -R . | jq -s .)
+
+          # Build version metadata
+          DATA=$(jq -n \
+            --arg name "$TAG" \
+            --arg version "$VERSION" \
+            --arg changelog "$CHANGELOG" \
+            --arg type "$VERSION_TYPE" \
+            --arg project "$MODRINTH_PROJECT_ID" \
+            --argjson game_versions "$GAME_VERSIONS" \
+            '{
+              name: $name,
+              version_number: $version,
+              changelog: $changelog,
+              dependencies: [],
+              game_versions: $game_versions,
+              version_type: $type,
+              loaders: ["fabric"],
+              featured: true,
+              project_id: $project,
+              file_parts: ["file-1.21.10", "file-1.21.11"]
+            }')
+
+          echo "Publishing to Modrinth: $VERSION ($VERSION_TYPE)"
+          curl -sf -X POST "https://api.modrinth.com/v2/version" \
+            -H "Authorization: $MODRINTH_TOKEN" \
+            -F "data=$DATA" \
+            -F "file-1.21.10=@versions/1.21.10/build/libs/ninja-utilities-${VERSION}+1.21.10.jar" \
+            -F "file-1.21.11=@versions/1.21.11/build/libs/ninja-utilities-${VERSION}+1.21.11.jar"
+
+          echo "Published to Modrinth successfully"
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          MODRINTH_PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
