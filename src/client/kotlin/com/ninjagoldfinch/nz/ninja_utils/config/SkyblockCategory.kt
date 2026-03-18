@@ -8,44 +8,56 @@ import com.teamresourceful.resourcefulconfig.api.annotations.ConfigOption
 @Category(value = "skyblock")
 class SkyblockCategory {
     companion object {
-        @ConfigOption.Separator(value = "ninja_utils.config.skyblock.scoreboard")
+        @ConfigOption.Separator(
+            value = "Scoreboard",
+            description = "Modify the SkyBlock sidebar scoreboard"
+        )
 
-        @ConfigEntry(id = "cleanScoreboard", translation = "ninja_utils.config.skyblock.cleanScoreboard")
-        @Comment(value = "Remove unnecessary lines from scoreboard")
+        @ConfigEntry(id = "cleanScoreboard", translation = "Clean Scoreboard")
+        @Comment("Remove unnecessary lines from the scoreboard")
         @JvmField var cleanScoreboard: Boolean = false
 
-        @ConfigEntry(id = "hideScoreboardNumbers", translation = "ninja_utils.config.skyblock.hideScoreboardNumbers")
-        @Comment(value = "Hide the red score numbers on the sidebar")
+        @ConfigEntry(id = "hideScoreboardNumbers", translation = "Hide Score Numbers")
+        @Comment("Hide the red score numbers on the sidebar")
         @JvmField var hideScoreboardNumbers: Boolean = false
 
-        @ConfigOption.Separator(value = "ninja_utils.config.skyblock.chat")
+        @ConfigOption.Separator(
+            value = "Chat",
+            description = "Track information from chat messages"
+        )
 
-        @ConfigEntry(id = "trackSkillXp", translation = "ninja_utils.config.skyblock.trackSkillXp")
-        @Comment(value = "Track skill XP gains from chat messages")
+        @ConfigEntry(id = "trackSkillXp", translation = "Track Skill XP")
+        @Comment("Track skill XP gains from chat messages")
         @JvmField var trackSkillXp: Boolean = true
 
-        @ConfigEntry(id = "trackRareDrops", translation = "ninja_utils.config.skyblock.trackRareDrops")
-        @Comment(value = "Log rare drops to debug log")
+        @ConfigEntry(id = "trackRareDrops", translation = "Track Rare Drops")
+        @Comment("Log rare drops to the debug log")
         @JvmField var trackRareDrops: Boolean = false
 
-        @ConfigEntry(id = "trackCoinChanges", translation = "ninja_utils.config.skyblock.trackCoinChanges")
-        @Comment(value = "Track coin gain/loss from chat messages")
+        @ConfigEntry(id = "trackCoinChanges", translation = "Track Coin Changes")
+        @Comment("Track coin gain/loss from chat messages")
         @JvmField var trackCoinChanges: Boolean = false
 
-        @ConfigOption.Separator(value = "ninja_utils.config.skyblock.slayer")
+        @ConfigOption.Separator(
+            value = "Slayer",
+            description = "Slayer quest tracking and alerts"
+        )
 
-        @ConfigEntry(id = "slayerTracker", translation = "ninja_utils.config.skyblock.slayerTracker")
-        @Comment(value = "Track slayer quest progress")
+        @ConfigEntry(id = "slayerTracker", translation = "Slayer Tracker")
+        @Comment("Track slayer quest progress and kill times")
         @JvmField var slayerTracker: Boolean = false
 
-        @ConfigEntry(id = "slayerBossAlert", translation = "ninja_utils.config.skyblock.slayerBossAlert")
-        @Comment(value = "Alert when slayer boss spawns")
+        @ConfigEntry(id = "slayerBossAlert", translation = "Slayer Boss Alert")
+        @Comment("Alert when your slayer boss spawns")
         @JvmField var slayerBossAlert: Boolean = false
 
-        @ConfigOption.Separator(value = "ninja_utils.config.skyblock.tablist")
+        @ConfigOption.Separator(
+            value = "Tab List",
+            description = "Data parsing from the player tab list"
+        )
 
-        @ConfigEntry(id = "parseTabWidgets", translation = "ninja_utils.config.skyblock.parseTabWidgets")
-        @Comment(value = "Parse tab list widget data for HUD use")
+        @ConfigEntry(id = "parseTabWidgets", translation = "Parse Tab Widgets")
+        @Comment("Parse tab list widget data for HUD elements")
         @JvmField var parseTabWidgets: Boolean = true
     }
 }

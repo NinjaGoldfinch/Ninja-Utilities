@@ -8,26 +8,32 @@ import com.teamresourceful.resourcefulconfig.api.annotations.ConfigOption
 @Category(value = "api")
 class ApiCategory {
     companion object {
-        @ConfigOption.Separator(value = "ninja_utils.config.api.backend")
+        @ConfigOption.Separator(
+            value = "Backend",
+            description = "Connection settings for the backend API"
+        )
 
-        @ConfigEntry(id = "enabled", translation = "ninja_utils.config.api.enabled")
-        @Comment(value = "Enable fetching data from the backend API")
+        @ConfigEntry(id = "enabled", translation = "Enable API")
+        @Comment("Enable fetching data from the backend API")
         @JvmField var enabled: Boolean = false
 
-        @ConfigEntry(id = "backendUrl", translation = "ninja_utils.config.api.backendUrl")
-        @Comment(value = "URL of your backend API server")
+        @ConfigEntry(id = "backendUrl", translation = "Backend URL")
+        @Comment("URL of your backend API server")
         @JvmField var backendUrl: String = ""
 
-        @ConfigOption.Separator(value = "ninja_utils.config.api.cache")
+        @ConfigOption.Separator(
+            value = "Cache",
+            description = "Control how long API responses are cached"
+        )
 
-        @ConfigEntry(id = "profileCacheTtl", translation = "ninja_utils.config.api.profileCacheTtl")
+        @ConfigEntry(id = "profileCacheTtl", translation = "Profile Cache TTL (s)")
+        @Comment("How long to cache profile data in seconds")
         @ConfigOption.Range(min = 60.0, max = 3600.0)
-        @Comment(value = "Profile cache TTL in seconds")
         @JvmField var profileCacheTtl: Int = 300
 
-        @ConfigEntry(id = "bazaarCacheTtl", translation = "ninja_utils.config.api.bazaarCacheTtl")
+        @ConfigEntry(id = "bazaarCacheTtl", translation = "Bazaar Cache TTL (s)")
+        @Comment("How long to cache Bazaar prices in seconds")
         @ConfigOption.Range(min = 30.0, max = 600.0)
-        @Comment(value = "Bazaar price cache TTL in seconds")
         @JvmField var bazaarCacheTtl: Int = 60
     }
 }
