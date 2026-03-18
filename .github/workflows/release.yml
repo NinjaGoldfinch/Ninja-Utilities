@@ -95,18 +95,44 @@ jobs:
 
       - name: Generate changelog
         run: |
-          # Get the previous tag for changelog diff
-          PREV_TAG=$(git tag -l 'v*' --sort=-v:refname | grep -v "${{ steps.version.outputs.tag }}" | head -1 || true)
+          TAG="${{ steps.version.outputs.tag }}"
+          PREV_TAG=$(git tag -l 'v*' --sort=-v:refname | grep -v "$TAG" | head -1 || true)
+
+          # Get merged PRs since last tag
+          PR_SECTION=""
           if [ -n "$PREV_TAG" ]; then
-            LOG=$(git log --pretty=format:"- %s" "${PREV_TAG}..HEAD" -- . ':!.github')
+            PREV_DATE=$(git log -1 --format=%aI "$PREV_TAG")
+            PRS=$(gh pr list --state merged --base development --search "merged:>=$PREV_DATE" --json number,title,body --jq '.[] | "### #\(.number) — \(.title)\n\(.body // "No description provided.")\n"' 2>/dev/null || true)
           else
-            LOG=$(git log --pretty=format:"- %s" HEAD -- . ':!.github' | head -30)
+            PRS=$(gh pr list --state merged --base development --limit 10 --json number,title,body --jq '.[] | "### #\(.number) — \(.title)\n\(.body // "No description provided.")\n"' 2>/dev/null || true)
           fi
 
-          # Write to file to avoid escaping issues
-          echo "$LOG" > /tmp/changelog.txt
+          if [ -n "$PRS" ]; then
+            PR_SECTION="## Pull Requests
+          $PRS"
+          fi
+
+          # Get commit log
+          if [ -n "$PREV_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"- %s" "${PREV_TAG}..HEAD" -- . ':!.github')
+          else
+            COMMITS=$(git log --pretty=format:"- %s" HEAD -- . ':!.github' | head -30)
+          fi
+
+          # Combine into changelog
+          {
+            if [ -n "$PR_SECTION" ]; then
+              echo "$PR_SECTION"
+              echo ""
+            fi
+            echo "## Commits"
+            echo "$COMMITS"
+          } > /tmp/changelog.txt
+
           echo "Changelog:"
           cat /tmp/changelog.txt
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: Create release
         if: steps.check_release.outputs.exists == 'false'
@@ -139,38 +165,44 @@ jobs:
 
           CHANGELOG=$(cat /tmp/changelog.txt)
 
-          # Collect game versions from build directories
-          GAME_VERSIONS=$(for d in versions/*/; do basename "$d"; done | jq -R . | jq -s .)
+          # Create a separate Modrinth version for each MC version
+          for mc_dir in versions/*/; do
+            MC_VER=$(basename "$mc_dir")
+            JAR_PATH="${mc_dir}build/libs/ninja-utilities-${VERSION}+${MC_VER}.jar"
 
-          # Build version metadata
-          DATA=$(jq -n \
-            --arg name "$TAG" \
-            --arg version "$VERSION" \
-            --arg changelog "$CHANGELOG" \
-            --arg type "$VERSION_TYPE" \
-            --arg project "$MODRINTH_PROJECT_ID" \
-            --argjson game_versions "$GAME_VERSIONS" \
-            '{
-              name: $name,
-              version_number: $version,
-              changelog: $changelog,
-              dependencies: [],
-              game_versions: $game_versions,
-              version_type: $type,
-              loaders: ["fabric"],
-              featured: true,
-              project_id: $project,
-              file_parts: ["file-1.21.10", "file-1.21.11"]
-            }')
+            if [ ! -f "$JAR_PATH" ]; then
+              echo "Warning: $JAR_PATH not found, skipping"
+              continue
+            fi
 
-          echo "Publishing to Modrinth: $VERSION ($VERSION_TYPE)"
-          curl -sf -X POST "https://api.modrinth.com/v2/version" \
-            -H "Authorization: $MODRINTH_TOKEN" \
-            -F "data=$DATA" \
-            -F "file-1.21.10=@versions/1.21.10/build/libs/ninja-utilities-${VERSION}+1.21.10.jar" \
-            -F "file-1.21.11=@versions/1.21.11/build/libs/ninja-utilities-${VERSION}+1.21.11.jar"
+            DATA=$(jq -n \
+              --arg name "${TAG} for ${MC_VER}" \
+              --arg version "${VERSION}+${MC_VER}" \
+              --arg changelog "$CHANGELOG" \
+              --arg type "$VERSION_TYPE" \
+              --arg project "$MODRINTH_PROJECT_ID" \
+              --arg mc_ver "$MC_VER" \
+              '{
+                name: $name,
+                version_number: $version,
+                changelog: $changelog,
+                dependencies: [],
+                game_versions: [$mc_ver],
+                version_type: $type,
+                loaders: ["fabric"],
+                featured: true,
+                project_id: $project,
+                file_parts: ["file"]
+              }')
 
-          echo "Published to Modrinth successfully"
+            echo "Publishing to Modrinth: ${VERSION}+${MC_VER} ($VERSION_TYPE)"
+            curl -sf -X POST "https://api.modrinth.com/v2/version" \
+              -H "Authorization: $MODRINTH_TOKEN" \
+              -F "data=$DATA" \
+              -F "file=@$JAR_PATH"
+
+            echo "Published ${MC_VER} to Modrinth successfully"
+          done
         env:
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
           MODRINTH_PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
