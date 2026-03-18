@@ -3,7 +3,7 @@
 
 Minecraft Mod for Hypixel SkyBlock
 
-![ninja-utils](https://raw.githubusercontent.com/NinjaGoldfinch/Ninja-Utilities/refs/heads/development/src/main/resources/assets/ninja-utils/icon.png)
+<img src="https://raw.githubusercontent.com/NinjaGoldfinch/Ninja-Utilities/refs/heads/development/src/main/resources/assets/ninja-utils/icon.png" alt="ninja-utils" width="200">
 </h1>
 
 <div align="center">
