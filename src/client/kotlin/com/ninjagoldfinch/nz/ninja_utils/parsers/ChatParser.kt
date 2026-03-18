@@ -6,7 +6,6 @@ import com.ninjagoldfinch.nz.ninja_utils.core.EventBus
 import com.ninjagoldfinch.nz.ninja_utils.core.RareDropEvent
 import com.ninjagoldfinch.nz.ninja_utils.core.SkillXpGainEvent
 import com.ninjagoldfinch.nz.ninja_utils.core.SlayerCompleteEvent
-import com.ninjagoldfinch.nz.ninja_utils.core.SlayerSpawnedEvent
 import com.ninjagoldfinch.nz.ninja_utils.features.stats.SlayerTracker
 import com.ninjagoldfinch.nz.ninja_utils.logging.ModLogger
 import com.ninjagoldfinch.nz.ninja_utils.util.RegexPatterns
@@ -22,12 +21,28 @@ data class ChatHandler(
 object ChatParser {
     private val logger = ModLogger.category("Chat")
     private val handlers = mutableListOf<ChatHandler>()
+    @PublishedApi internal var suppressed = false
 
     fun register(handler: ChatHandler) {
         handlers.add(handler)
     }
 
+    /**
+     * Runs [block] with chat parsing suppressed, so that any client-side
+     * messages sent inside (e.g. mod alerts) are not picked up by handlers.
+     */
+    inline fun <T> suppressParsing(block: () -> T): T {
+        suppressed = true
+        try {
+            return block()
+        } finally {
+            suppressed = false
+        }
+    }
+
     fun onChatMessage(message: Text, overlay: Boolean) {
+        if (suppressed) return
+
         val raw = TextUtils.stripFormatting(message.string).trim()
         if (raw.isBlank()) return
 
@@ -68,10 +83,9 @@ object ChatParser {
             EventBus.post(RareDropEvent(itemName))
         })
 
-        register(ChatHandler("SlayerSpawned", RegexPatterns.SLAYER_SPAWNED) {
-            logger.info("Slayer boss spawned!")
-            SlayerTracker.onBossSpawned()
-            EventBus.post(SlayerSpawnedEvent(SlayerTracker.activeQuest))
+        register(ChatHandler("SlayerStarted", RegexPatterns.SLAYER_SPAWNED) {
+            logger.info("Slayer quest started!")
+            SlayerTracker.onQuestStarted()
         })
 
         register(ChatHandler("SlayerComplete", RegexPatterns.SLAYER_COMPLETE) {

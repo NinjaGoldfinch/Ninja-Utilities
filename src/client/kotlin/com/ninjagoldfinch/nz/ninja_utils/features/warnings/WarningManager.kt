@@ -3,8 +3,7 @@ package com.ninjagoldfinch.nz.ninja_utils.features.warnings
 import com.ninjagoldfinch.nz.ninja_utils.config.GeneralCategory
 import com.ninjagoldfinch.nz.ninja_utils.core.HypixelState
 import com.ninjagoldfinch.nz.ninja_utils.logging.ModLogger
-import net.minecraft.client.MinecraftClient
-import net.minecraft.text.Text
+import com.ninjagoldfinch.nz.ninja_utils.util.ChatUtils
 
 object WarningManager {
     private val logger = ModLogger.category("Warnings")
@@ -71,12 +70,6 @@ object WarningManager {
     }
 
     private fun sendModMessage(message: String) {
-        if (!GeneralCategory.chatPrefix) {
-            MinecraftClient.getInstance().player?.sendMessage(Text.literal(message), false)
-        } else {
-            MinecraftClient.getInstance().player?.sendMessage(
-                Text.literal("\u00a78[\u00a76NinjaUtils\u00a78]\u00a7r $message"), false
-            )
-        }
+        ChatUtils.sendModMessage(message)
     }
 }

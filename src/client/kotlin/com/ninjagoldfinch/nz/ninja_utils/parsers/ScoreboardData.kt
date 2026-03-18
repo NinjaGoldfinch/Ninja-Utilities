@@ -7,6 +7,7 @@ data class ScoreboardData(
     val location: String?,
     val slayerQuest: String?,
     val slayerProgress: String?,
+    val slayerBossSpawned: Boolean,
     val objective: String?,
     val rawLines: List<String>
 )

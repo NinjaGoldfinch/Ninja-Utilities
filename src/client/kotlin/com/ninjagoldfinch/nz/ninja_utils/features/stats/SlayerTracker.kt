@@ -1,10 +1,8 @@
 package com.ninjagoldfinch.nz.ninja_utils.features.stats
 
-import com.ninjagoldfinch.nz.ninja_utils.config.GeneralCategory
 import com.ninjagoldfinch.nz.ninja_utils.config.SkyblockCategory
 import com.ninjagoldfinch.nz.ninja_utils.logging.ModLogger
-import net.minecraft.client.MinecraftClient
-import net.minecraft.text.Text
+import com.ninjagoldfinch.nz.ninja_utils.util.ChatUtils
 
 object SlayerTracker {
     private val logger = ModLogger.category("Slayer")
@@ -24,10 +22,13 @@ object SlayerTracker {
 
     fun onQuestStarted() {
         if (!SkyblockCategory.slayerTracker) return
-        // Quest info comes from scoreboard parsing
         questStartTime = System.currentTimeMillis()
         bossSpawned = false
         logger.info("Slayer quest started")
+
+        if (SkyblockCategory.slayerBossAlert) {
+            sendAlert("\u00a7e\u00a7lSLAYER QUEST STARTED!")
+        }
     }
 
     fun onBossSpawned() {
@@ -42,14 +43,14 @@ object SlayerTracker {
 
     fun onBossSlain() {
         val duration = if (bossSpawnTime > 0) {
-            (System.currentTimeMillis() - bossSpawnTime) / 1000
+            (System.currentTimeMillis() - bossSpawnTime) / 1000.0
         } else null
 
         completionsThisSession++
         lastCompletionTime = System.currentTimeMillis()
         bossSpawned = false
 
-        val durationStr = if (duration != null) " in ${duration}s" else ""
+        val durationStr = if (duration != null) " in ${"%.1f".format(duration)}s" else ""
         logger.info("Slayer boss slain$durationStr (session total: $completionsThisSession)")
 
         if (SkyblockCategory.slayerBossAlert) {
@@ -70,11 +71,6 @@ object SlayerTracker {
     }
 
     private fun sendAlert(message: String) {
-        val player = MinecraftClient.getInstance().player ?: return
-        if (GeneralCategory.chatPrefix) {
-            player.sendMessage(Text.literal("\u00a78[\u00a76NinjaUtils\u00a78]\u00a7r $message"), false)
-        } else {
-            player.sendMessage(Text.literal(message), false)
-        }
+        ChatUtils.sendModMessage(message)
     }
 }

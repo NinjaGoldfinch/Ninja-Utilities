@@ -6,5 +6,6 @@ data class TabListData(
     val profile: String?,
     val pet: String?,
     val cookie: String?,
+    val slayerBossSpawned: Boolean,
     val rawLines: List<String>
 )

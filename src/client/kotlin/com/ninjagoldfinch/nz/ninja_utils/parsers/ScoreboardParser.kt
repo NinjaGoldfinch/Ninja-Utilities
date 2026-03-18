@@ -1,7 +1,10 @@
 package com.ninjagoldfinch.nz.ninja_utils.parsers
 
 import com.ninjagoldfinch.nz.ninja_utils.config.DebugCategory
+import com.ninjagoldfinch.nz.ninja_utils.core.EventBus
 import com.ninjagoldfinch.nz.ninja_utils.core.HypixelState
+import com.ninjagoldfinch.nz.ninja_utils.core.SlayerCompleteEvent
+import com.ninjagoldfinch.nz.ninja_utils.core.SlayerSpawnedEvent
 import com.ninjagoldfinch.nz.ninja_utils.features.stats.SlayerTracker
 import com.ninjagoldfinch.nz.ninja_utils.logging.ModLogger
 import com.ninjagoldfinch.nz.ninja_utils.util.RegexPatterns
@@ -62,10 +65,31 @@ object ScoreboardParser {
         var location: String? = null
         var slayerQuest: String? = null
         var slayerProgress: String? = null
+        var slayerBossSpawned = false
         var parsedObjective: String? = null
         var sbDate: String? = null
+        var inSlayerSection = false
 
         for (line in lines) {
+            // Track Slayer Quest section — only parse slayer data after this header
+            if (line == "Slayer Quest") {
+                inSlayerSection = true
+                continue
+            }
+
+            if (inSlayerSection) {
+                if (line == "Slay the boss!") {
+                    slayerBossSpawned = true
+                    continue
+                }
+                RegexPatterns.SLAYER_QUEST.find(line)?.let {
+                    slayerQuest = "${it.groupValues[1]} ${it.groupValues[2]}"
+                    continue
+                }
+                // Any non-matching line ends the slayer section
+                inSlayerSection = false
+            }
+
             RegexPatterns.PURSE.find(line)?.let {
                 purse = it.groupValues[1].replace(",", "").toLongOrNull()
             }
@@ -74,9 +98,6 @@ object ScoreboardParser {
             }
             RegexPatterns.LOCATION.find(line)?.let {
                 location = it.groupValues[1].trim()
-            }
-            RegexPatterns.SLAYER_QUEST.find(line)?.let {
-                slayerQuest = "${it.groupValues[1]} ${it.groupValues[2]}"
             }
             RegexPatterns.OBJECTIVE.find(line)?.let {
                 parsedObjective = it.groupValues[1].trim()
@@ -95,6 +116,18 @@ object ScoreboardParser {
         location?.let { HypixelState.currentArea = it }
         SlayerTracker.updateFromScoreboard(slayerQuest)
 
+        // Detect boss spawn from scoreboard
+        if (slayerBossSpawned && !SlayerTracker.bossSpawned) {
+            logger.info("Slayer boss spawned (detected from scoreboard)")
+            SlayerTracker.onBossSpawned()
+            EventBus.post(SlayerSpawnedEvent(SlayerTracker.activeQuest))
+        } else if (!slayerBossSpawned && SlayerTracker.bossSpawned) {
+            // "Slay the boss!" disappeared — boss was killed
+            logger.info("Slayer boss no longer on scoreboard, resetting boss state")
+            SlayerTracker.onBossSlain()
+            EventBus.post(SlayerCompleteEvent(SlayerTracker.activeQuest))
+        }
+
         return ScoreboardData(
             title = title,
             purse = purse,
@@ -102,6 +135,7 @@ object ScoreboardParser {
             location = location,
             slayerQuest = slayerQuest,
             slayerProgress = slayerProgress,
+            slayerBossSpawned = slayerBossSpawned,
             objective = parsedObjective,
             rawLines = lines
         )

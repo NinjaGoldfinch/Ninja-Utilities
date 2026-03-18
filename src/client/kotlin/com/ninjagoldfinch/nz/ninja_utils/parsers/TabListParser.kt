@@ -1,6 +1,9 @@
 package com.ninjagoldfinch.nz.ninja_utils.parsers
 
 import com.ninjagoldfinch.nz.ninja_utils.config.DebugCategory
+import com.ninjagoldfinch.nz.ninja_utils.core.EventBus
+import com.ninjagoldfinch.nz.ninja_utils.core.SlayerSpawnedEvent
+import com.ninjagoldfinch.nz.ninja_utils.features.stats.SlayerTracker
 import com.ninjagoldfinch.nz.ninja_utils.logging.ModLogger
 import com.ninjagoldfinch.nz.ninja_utils.util.TextUtils
 import net.minecraft.client.MinecraftClient
@@ -27,6 +30,7 @@ object TabListParser {
         var profile: String? = null
         var pet: String? = null
         var cookie: String? = null
+        var slayerBossSpawned = false
         val stats = mutableListOf<String>()
         var currentSection: String? = null
 
@@ -49,9 +53,18 @@ object TabListParser {
                     currentSection = null
                     cookie = line.removePrefix("Cookie Buff:").trim().ifBlank { null }
                 }
+                line.startsWith("Slayer:") -> currentSection = "slayer"
+                currentSection == "slayer" && line == "Slay the boss!" -> slayerBossSpawned = true
                 currentSection == "stats" -> stats.add(line)
                 currentSection == "skills" && skills == null -> skills = line.trim()
             }
+        }
+
+        // Update slayer boss state from tab list
+        if (slayerBossSpawned && !SlayerTracker.bossSpawned) {
+            logger.info("Slayer boss spawned (detected from tab list)")
+            SlayerTracker.onBossSpawned()
+            EventBus.post(SlayerSpawnedEvent(SlayerTracker.activeQuest))
         }
 
         val data = TabListData(
@@ -60,6 +73,7 @@ object TabListParser {
             profile = profile,
             pet = pet,
             cookie = cookie,
+            slayerBossSpawned = slayerBossSpawned,
             rawLines = lines
         )
         lastData = data
