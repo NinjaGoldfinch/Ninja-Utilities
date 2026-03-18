@@ -53,10 +53,6 @@ class HudCategory {
 
         @ConfigOption.Separator(value = "ninja_utils.config.hud.appearance")
 
-        @ConfigEntry(id = "combinedHud", translation = "ninja_utils.config.hud.combinedHud")
-        @Comment(value = "Combine all HUD elements into a single panel")
-        @JvmField var combinedHud: Boolean = false
-
         @ConfigEntry(id = "hudScale", translation = "ninja_utils.config.hud.hudScale")
         @ConfigOption.Range(min = 0.5, max = 3.0)
         @ConfigOption.Slider
@@ -66,11 +62,5 @@ class HudCategory {
         @ConfigOption.Range(min = 0.0, max = 1.0)
         @ConfigOption.Slider
         @JvmField var hudBackgroundOpacity: Float = 0.5f
-
-        @ConfigEntry(id = "hudX", translation = "ninja_utils.config.hud.hudX")
-        @JvmField var hudX: Int = 5
-
-        @ConfigEntry(id = "hudY", translation = "ninja_utils.config.hud.hudY")
-        @JvmField var hudY: Int = 5
     }
 }
