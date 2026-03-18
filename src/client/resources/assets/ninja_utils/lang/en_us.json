@@ -28,7 +28,7 @@
   "ninja_utils.config.hud.showDebugOverlay": "Show Debug Overlay",
   "ninja_utils.config.hud.garden": "Garden",
   "ninja_utils.config.hud.showCopper": "Show Copper",
-  "ninja_utils.config.hud.showCompost": "Show Compost",
+  "ninja_utils.config.hud.showSowdust": "Show Sowdust",
   "ninja_utils.config.hud.appearance": "Appearance",
   "ninja_utils.config.hud.hudScale": "HUD Scale",
   "ninja_utils.config.hud.hudBackgroundOpacity": "Background Opacity",

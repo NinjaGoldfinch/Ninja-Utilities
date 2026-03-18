@@ -1,10 +1,36 @@
-# Ninja Utilities
+<h1 align="center">
+  Ninja Utilities
 
-![Discord](https://img.shields.io/discord/1194919292437807163)
-![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/NinjaGoldfinch/Ninja-Utilities/total)
-![Modrinth Downloads](https://img.shields.io/modrinth/dt/pVY1CRc2)
+Minecraft Mod for Hypixel SkyBlock
 
-A client-side Fabric mod for Hypixel SkyBlock that provides a configurable HUD, stat tracking, and quality-of-life features.
+![ninja-utils](https://raw.githubusercontent.com/NinjaGoldfinch/Ninja-Utilities/refs/heads/development/src/main/resources/assets/ninja-utils/icon.png)
+</h1>
+
+<div align="center">
+
+[![Discord](https://img.shields.io/discord/1194919292437807163?label=discord&color=7289da&logo=discord&style=for-the-badge)](https://discord.gg/cegdEA3h77)
+[![Downloads](https://img.shields.io/github/downloads/NinjaGoldfinch/Ninja-Utilities/total?label=downloads&color=055ca3&logo=github&style=for-the-badge)](https://github.com/NinjaGoldfinch/Ninja-Utilities/releases)
+[![Modrinth](https://img.shields.io/modrinth/dt/pVY1CRc2?style=for-the-badge&logo=Modrinth&color=17ad56)](https://modrinth.com/mod/pVY1CRc2)
+</div>
+
+## What it does
+
+Ninja Utilities is a Fabric Mod for Minecraft 1.21.10-1.21.11 that adds a configurable HUD, stat tracking, and quality-of-life features for [Hypixel SkyBlock](https://wiki.hypixel.net/).
+
+* **Customizable HUD:** Location, purse, bits, skill XP, slayer, mayor, pet, cookie timer, and more
+* **Stat Tracking:** Skill XP rates, slayer quest tracking with boss alerts, and session counters
+* **Island-Specific Features:** Garden copper/compost tracking, with more islands planned
+* **And much more!**
+
+## Join the Discord!
+
+Give feedback or just chat with others on our Discord.
+
+* **Bug Reports:** Use the `#bug-reporting` channel when you find broken stuff.
+* **Feature Suggestions:** Feel free to share your ideas in `#suggestions` for new features and improvements.
+* **Chatting:** Chat with other Ninja Utilities users in `#general`.
+
+---
 
 ## Features
 
@@ -18,6 +44,8 @@ A client-side Fabric mod for Hypixel SkyBlock that provides a configurable HUD, 
 - **Pet** — Active pet from tab list
 - **Cookie Timer** — Cookie buff duration from tab list
 - **SkyBlock Date** — In-game date from scoreboard
+- **Copper** — Copper count (Garden only)
+- **Sowdust** — Sowdust count (Garden only)
 
 ### HUD Customization
 - Draggable panel positioning (`/ninja_utils dev hud_config`)
@@ -34,17 +62,6 @@ A client-side Fabric mod for Hypixel SkyBlock that provides a configurable HUD, 
 - Hypixel public API (election/bazaar data, no key required)
 - Backend proxy support for key-required endpoints (profile data)
 - TTL-based caching with configurable durations
-- Retry with exponential backoff
-
-### Warnings
-- Mod API not detected after joining Hypixel
-- Unknown location detection
-- Unknown island mode logging
-
-### Debug Tools
-- Debug overlay with full state inspection, performance metrics, and memory monitoring
-- Dev commands for inspecting scoreboard, tab list, API state, and more
-- Configurable logging verbosity per subsystem
 
 ## Requirements
 
@@ -64,7 +81,7 @@ A client-side Fabric mod for Hypixel SkyBlock that provides a configurable HUD, 
    - Fabric API
    - Fabric Language Kotlin
    - ResourcefulConfig
-3. Download the Ninja Utilities `.jar` for your MC version from releases
+3. Download the Ninja Utilities `.jar` for your MC version from [releases](https://github.com/NinjaGoldfinch/Ninja-Utilities/releases)
 4. Place it in your `mods/` folder
 5. Launch the game
 
@@ -74,7 +91,6 @@ All commands are available under `/ninja_utils` with aliases `/nu`, `/ninja`, `/
 
 | Command | Description |
 |---------|-------------|
-| `/ninja_utils` | Show help |
 | `/ninja_utils config` | Open the settings screen |
 | `/ninja_utils dev` | Show all debug state |
 | `/ninja_utils dev state` | Hypixel connection state |
@@ -86,9 +102,7 @@ All commands are available under `/ninja_utils` with aliases `/nu`, `/ninja`, `/
 | `/ninja_utils dev api` | API client status and cache state |
 | `/ninja_utils dev mayor` | Fetch and display election data |
 | `/ninja_utils dev perf` | Performance and memory stats |
-| `/ninja_utils dev hud` | HUD configuration state |
 | `/ninja_utils dev hud_config` | Open HUD position editor |
-| `/ninja_utils dev toggle` | Toggle SkyBlock-only mode |
 
 ## Configuration
 

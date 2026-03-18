@@ -68,7 +68,7 @@ object ScoreboardParser {
         var slayerProgress: String? = null
         var slayerBossSpawned = false
         var copper: Int? = null
-        var compost: Int? = null
+        var sowdust: Int? = null
         var parsedObjective: String? = null
         var sbDate: String? = null
         var inSlayerSection = false
@@ -110,8 +110,8 @@ object ScoreboardParser {
                 RegexPatterns.COPPER.find(line)?.let {
                     copper = it.groupValues[1].replace(",", "").toIntOrNull()
                 }
-                RegexPatterns.COMPOST.find(line)?.let {
-                    compost = it.groupValues[1].replace(",", "").toIntOrNull()
+                RegexPatterns.SOWDUST.find(line)?.let {
+                    sowdust = it.groupValues[1].replace(",", "").toIntOrNull()
                 }
             }
             RegexPatterns.SB_DATE.find(line)?.let {
@@ -127,7 +127,7 @@ object ScoreboardParser {
         bits?.let { HypixelState.bits = it }
         location?.let { HypixelState.currentArea = it }
         copper?.let { HypixelState.copper = it }
-        compost?.let { HypixelState.compost = it }
+        sowdust?.let { HypixelState.sowdust = it }
         SlayerTracker.updateFromScoreboard(slayerQuest)
 
         // Detect boss spawn from scoreboard

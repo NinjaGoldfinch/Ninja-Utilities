@@ -14,7 +14,7 @@ object RegexPatterns {
 
     // Garden patterns
     val COPPER = Regex("""Copper: ([\d,]+)""")
-    val COMPOST = Regex("""Compost: ([\d,]+)""")
+    val SOWDUST = Regex("""Sowdust: ([\d,]+)""")
 
     // Chat patterns
     val SKILL_XP = Regex("""\+?([\d,.]+) ([\w][\w ]*?) \(([\d,.]+)/([\d,.]+)\)""")

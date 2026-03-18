@@ -57,9 +57,9 @@ class HudCategory {
         @Comment(value = "Show Copper count (Garden only)")
         @JvmField var showCopper: Boolean = false
 
-        @ConfigEntry(id = "showCompost", translation = "ninja_utils.config.hud.showCompost")
-        @Comment(value = "Show Compost count (Garden only)")
-        @JvmField var showCompost: Boolean = false
+        @ConfigEntry(id = "showSowdust", translation = "ninja_utils.config.hud.showSowdust")
+        @Comment(value = "Show Sowdust count (Garden only)")
+        @JvmField var showSowdust: Boolean = false
 
         @ConfigOption.Separator(value = "ninja_utils.config.hud.appearance")
 

@@ -43,7 +43,7 @@ object HypixelState {
 
     // Garden-specific data (updated by ScoreboardParser)
     var copper: Int = 0
-    var compost: Int = 0
+    var sowdust: Int = 0
 
     fun update(serverName: String?, serverType: String?, mode: String?, map: String?, lobbyName: String?) {
         val previousIsland = this.currentIsland
@@ -59,7 +59,7 @@ object HypixelState {
             purse = 0
             bits = 0
             copper = 0
-            compost = 0
+            sowdust = 0
             SlayerTracker.reset()
         }
 
@@ -86,6 +86,6 @@ object HypixelState {
         currentArea = null
         skyblockDetectedViaScoreboard = false
         copper = 0
-        compost = 0
+        sowdust = 0
     }
 }

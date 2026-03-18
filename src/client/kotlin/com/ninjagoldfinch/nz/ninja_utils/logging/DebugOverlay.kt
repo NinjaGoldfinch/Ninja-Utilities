@@ -40,7 +40,7 @@ object DebugOverlay {
         // Garden-specific debug info
         if (s.currentIsland == SkyBlockIsland.GARDEN) {
             lines.add(HudLine("Copper", s.copper.toString(), valueColor = VALUE_COLOR))
-            lines.add(HudLine("Compost", s.compost.toString(), valueColor = VALUE_COLOR))
+            lines.add(HudLine("Sowdust", s.sowdust.toString(), valueColor = VALUE_COLOR))
         }
 
         val slayer = SlayerTracker.activeQuest
