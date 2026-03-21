@@ -10,6 +10,7 @@ import com.ninjagoldfinch.nz.ninja_utils.features.stats.SkillTracker
 import com.ninjagoldfinch.nz.ninja_utils.hud.elements.BitsHud
 import com.ninjagoldfinch.nz.ninja_utils.hud.elements.CoinPurseHud
 import com.ninjagoldfinch.nz.ninja_utils.hud.elements.CopperHud
+import com.ninjagoldfinch.nz.ninja_utils.hud.elements.PestHud
 import com.ninjagoldfinch.nz.ninja_utils.hud.elements.SowdustHud
 import com.ninjagoldfinch.nz.ninja_utils.hud.elements.LocationHud
 import com.ninjagoldfinch.nz.ninja_utils.hud.elements.CookieTimerHud
@@ -60,6 +61,7 @@ object HudManager {
         register(TPSHud)
         register(CopperHud)
         register(SowdustHud)
+        register(PestHud)
         register(DebugHudElement)
 
         EventBus.subscribe<SkillXpGainEvent> { event ->

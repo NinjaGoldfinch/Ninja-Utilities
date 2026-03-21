@@ -8,6 +8,9 @@ object SkillTracker {
     private val xpHistory = mutableMapOf<String, MutableList<XpEntry>>()
     private const val RATE_WINDOW_MS = 60_000L
 
+    /** Time source, overridable for testing. */
+    var timeProvider: () -> Long = { timeProvider() }
+
     data class XpEntry(val xpGain: Double, val timestamp: Long)
 
     data class SkillRate(
@@ -19,7 +22,7 @@ object SkillTracker {
 
     fun recordXpGain(skill: String, xpGain: Double) {
         val entries = xpHistory.getOrPut(skill) { mutableListOf() }
-        entries.add(XpEntry(xpGain, System.currentTimeMillis()))
+        entries.add(XpEntry(xpGain, timeProvider()))
         pruneOldEntries(entries)
         logger.trace("Recorded +$xpGain $skill XP (${entries.size} entries in window)")
     }
@@ -55,7 +58,7 @@ object SkillTracker {
     }
 
     private fun pruneOldEntries(entries: MutableList<XpEntry>) {
-        val cutoff = System.currentTimeMillis() - RATE_WINDOW_MS
+        val cutoff = timeProvider() - RATE_WINDOW_MS
         entries.removeAll { it.timestamp < cutoff }
     }
 }

@@ -15,6 +15,6 @@ object BitsHud : HudElement("bits", "Bits") {
     override fun getData(): HudLine? {
         val bits = HypixelState.bits
         if (bits == 0) return null
-        return HudLine("Bits", numberFormat.format(bits), valueColor = 0xFF55FF55.toInt())
+        return HudLine("Bits", numberFormat.format(bits), valueColor = 0xFF55FFFF.toInt())
     }
 }

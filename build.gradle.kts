@@ -49,6 +49,24 @@ dependencies {
 
     // ResourcefulConfig (version-specific artifact per MC version)
     modImplementation("com.teamresourceful.resourcefulconfig:resourcefulconfig-fabric-${property("resourceful_mc_version")}:${property("resourceful_version")}")
+
+    // Testing
+    testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("io.mockk:mockk:1.13.16")
+    testImplementation(kotlin("test"))
+}
+
+// Wire test source set to see client source set (Fabric Loom splits main/client)
+sourceSets {
+    named("test") {
+        compileClasspath += sourceSets["client"].output + sourceSets["client"].compileClasspath
+        runtimeClasspath += sourceSets["client"].output + sourceSets["client"].runtimeClasspath
+    }
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 tasks.processResources {

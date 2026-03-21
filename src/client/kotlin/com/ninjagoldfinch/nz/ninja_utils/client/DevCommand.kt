@@ -12,12 +12,15 @@ import com.ninjagoldfinch.nz.ninja_utils.features.stats.SkillTracker
 import com.ninjagoldfinch.nz.ninja_utils.features.stats.SlayerTracker
 import com.ninjagoldfinch.nz.ninja_utils.logging.PerformanceMonitor
 import com.ninjagoldfinch.nz.ninja_utils.hud.elements.SkillProgressHud
+import com.ninjagoldfinch.nz.ninja_utils.parsers.ChatParser
 import com.ninjagoldfinch.nz.ninja_utils.parsers.ScoreboardParser
 import com.ninjagoldfinch.nz.ninja_utils.parsers.TabListParser
 import java.text.NumberFormat
 import java.util.Locale
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
+import net.minecraft.client.MinecraftClient
+import net.minecraft.scoreboard.ScoreboardDisplaySlot
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 
@@ -111,6 +114,25 @@ object DevCommand {
             then(literal("perf").executes { ctx ->
                 sendPerf(ctx.source)
                 1
+            })
+
+            then(literal("colors").apply {
+                executes { ctx ->
+                    sendColorsAll(ctx.source)
+                    1
+                }
+                then(literal("chat").executes { ctx ->
+                    sendColorChat(ctx.source)
+                    1
+                })
+                then(literal("scoreboard").executes { ctx ->
+                    sendColorScoreboard(ctx.source)
+                    1
+                })
+                then(literal("tablist").executes { ctx ->
+                    sendColorTabList(ctx.source)
+                    1
+                })
             })
 
         }
@@ -321,6 +343,68 @@ object DevCommand {
         msg(source, "Total entries: ${tab.rawLines.size}")
         tab.rawLines.forEachIndexed { i, line ->
             msg(source, "  [$i] $line", Formatting.GRAY)
+        }
+    }
+
+    // ── Color formatting inspection ──────────────────────────────────────
+
+    /** Replace § with & so the formatting codes are visible in chat instead of being rendered. */
+    private fun escapeFormatting(text: String): String =
+        text.replace("\u00a7", "&")
+
+    private fun sendColorsAll(source: FabricClientCommandSource) {
+        sendColorScoreboard(source)
+        sendColorTabList(source)
+        sendColorChat(source)
+    }
+
+    private fun sendColorScoreboard(source: FabricClientCommandSource) {
+        header(source, "Scoreboard Colors")
+        val scoreboard = MinecraftClient.getInstance().world?.scoreboard
+        val objective = scoreboard?.getObjectiveForSlot(ScoreboardDisplaySlot.SIDEBAR)
+        if (scoreboard == null || objective == null) {
+            msg(source, "No scoreboard data available", Formatting.RED)
+            return
+        }
+
+        msg(source, "title: ${escapeFormatting(objective.displayName.string)}", Formatting.GRAY)
+        val entries = scoreboard.getScoreboardEntries(objective)
+            .sortedByDescending { it.value }
+        entries.forEachIndexed { i, entry ->
+            val raw = entry.display?.string
+                ?: scoreboard.getScoreHolderTeam(entry.owner)
+                    ?.decorateName(Text.literal(entry.owner))?.string
+                ?: entry.owner
+            msg(source, "  [$i] ${escapeFormatting(raw)}", Formatting.GRAY)
+        }
+    }
+
+    private fun sendColorTabList(source: FabricClientCommandSource) {
+        header(source, "Tab List Colors")
+        val networkHandler = MinecraftClient.getInstance().networkHandler
+        if (networkHandler == null) {
+            msg(source, "No tab list data available", Formatting.RED)
+            return
+        }
+        val entries = networkHandler.playerList.sortedBy { it.listOrder }
+        val lines = entries.mapNotNull { it.displayName?.string }
+            .filter { it.isNotBlank() }
+        msg(source, "Total entries: ${lines.size}")
+        lines.forEachIndexed { i, line ->
+            msg(source, "  [$i] ${escapeFormatting(line)}", Formatting.GRAY)
+        }
+    }
+
+    private fun sendColorChat(source: FabricClientCommandSource) {
+        header(source, "Recent Chat Colors")
+        val messages = ChatParser.getRecentFormatted()
+        if (messages.isEmpty()) {
+            msg(source, "No recent chat messages", Formatting.RED)
+            return
+        }
+        msg(source, "Last ${messages.size} messages:")
+        messages.forEachIndexed { i, line ->
+            msg(source, "  [$i] ${escapeFormatting(line)}", Formatting.GRAY)
         }
     }
 

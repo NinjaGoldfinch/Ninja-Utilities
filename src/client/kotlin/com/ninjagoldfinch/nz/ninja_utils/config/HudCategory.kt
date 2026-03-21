@@ -83,6 +83,10 @@ class HudCategory {
         @Comment("Display Sowdust count (Garden only)")
         @JvmField var showSowdust: Boolean = false
 
+        @ConfigEntry(id = "showPests", translation = "Show Pests")
+        @Comment("Display pest count on your Garden island")
+        @JvmField var showPests: Boolean = false
+
         @ConfigOption.Separator(
             value = "Appearance",
             description = "Customize the look of the HUD"
