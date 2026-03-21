@@ -7,6 +7,9 @@ import com.ninjagoldfinch.nz.ninja_utils.util.ChatUtils
 object SlayerTracker {
     private val logger = ModLogger.category("Slayer")
 
+    /** Time source, overridable for testing. */
+    var timeProvider: () -> Long = { timeProvider() }
+
     var activeQuest: String? = null
         private set
     var questStartTime: Long = 0
@@ -22,7 +25,7 @@ object SlayerTracker {
 
     fun onQuestStarted() {
         if (!SkyblockCategory.slayerTracker) return
-        questStartTime = System.currentTimeMillis()
+        questStartTime = timeProvider()
         bossSpawned = false
         logger.info("Slayer quest started")
 
@@ -33,7 +36,7 @@ object SlayerTracker {
 
     fun onBossSpawned() {
         bossSpawned = true
-        bossSpawnTime = System.currentTimeMillis()
+        bossSpawnTime = timeProvider()
         logger.info("Slayer boss spawned!")
 
         if (SkyblockCategory.slayerBossAlert) {
@@ -43,11 +46,11 @@ object SlayerTracker {
 
     fun onBossSlain() {
         val duration = if (bossSpawnTime > 0) {
-            (System.currentTimeMillis() - bossSpawnTime) / 1000.0
+            (timeProvider() - bossSpawnTime) / 1000.0
         } else null
 
         completionsThisSession++
-        lastCompletionTime = System.currentTimeMillis()
+        lastCompletionTime = timeProvider()
         bossSpawned = false
 
         val durationStr = if (duration != null) " in ${"%.1f".format(duration)}s" else ""

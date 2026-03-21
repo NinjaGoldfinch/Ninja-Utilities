@@ -29,7 +29,6 @@
   "ninja_utils.config.hud.garden": "Garden",
   "ninja_utils.config.hud.showCopper": "Show Copper",
   "ninja_utils.config.hud.showSowdust": "Show Sowdust",
-  "ninja_utils.config.hud.showPests": "Show Pests",
   "ninja_utils.config.hud.appearance": "Appearance",
   "ninja_utils.config.hud.hudScale": "HUD Scale",
   "ninja_utils.config.hud.hudBackgroundOpacity": "Background Opacity",

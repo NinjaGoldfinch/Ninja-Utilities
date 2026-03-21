@@ -17,6 +17,6 @@ object CopperHud : HudElement("copper", "Copper") {
         if (HypixelState.currentIsland != SkyBlockIsland.GARDEN) return null
         val copper = HypixelState.copper
         if (copper == 0) return null
-        return HudLine("Copper", numberFormat.format(copper), valueColor = 0xFFFF8C00.toInt())
+        return HudLine("Copper", numberFormat.format(copper), valueColor = 0xFFFF5555.toInt())
     }
 }

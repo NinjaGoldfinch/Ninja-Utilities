@@ -41,6 +41,8 @@ object DebugOverlay {
         if (s.currentIsland == SkyBlockIsland.GARDEN) {
             lines.add(HudLine("Copper", s.copper.toString(), valueColor = VALUE_COLOR))
             lines.add(HudLine("Sowdust", s.sowdust.toString(), valueColor = VALUE_COLOR))
+            lines.add(HudLine("Pests", s.gardenPests.toString(), valueColor = if (s.gardenPests > 0) FALSE_COLOR else TRUE_COLOR))
+            lines.add(HudLine("Plot", s.currentPlot ?: "none", valueColor = VALUE_COLOR))
         }
 
         val slayer = SlayerTracker.activeQuest
