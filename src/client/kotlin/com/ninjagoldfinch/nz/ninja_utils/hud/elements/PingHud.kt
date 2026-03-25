@@ -10,7 +10,7 @@ object PingHud : HudElement("ping", "Ping") {
     override fun isEnabled(): Boolean = HudCategory.showPing
 
     override fun getData(): HudLine? {
-        val ping = PingTracker.ping
+        val ping = PingTracker.displayPing
         if (ping <= 0) return null
 
         val color = when {
@@ -20,6 +20,9 @@ object PingHud : HudElement("ping", "Ping") {
             else -> 0xFFFF5555.toInt()           // red
         }
 
-        return HudLine("Ping", "${ping}ms", valueColor = color)
+        val avg = PingTracker.averagePing
+        val avgText = if (avg > 0) " (${avg}ms)" else ""
+
+        return HudLine("Ping", "${ping}ms", valueColor = color, suffix = avgText)
     }
 }

@@ -166,6 +166,10 @@ object HudManager {
 
             context.drawTextWithShadow(textRenderer, Text.literal(labelText), x + PADDING, lineY, line.labelColor)
             context.drawTextWithShadow(textRenderer, Text.literal(line.value), x + PADDING + labelWidth, lineY, line.valueColor)
+            if (line.suffix.isNotEmpty()) {
+                val valueWidth = textRenderer.getWidth(line.value)
+                context.drawTextWithShadow(textRenderer, Text.literal(line.suffix), x + PADDING + labelWidth + valueWidth, lineY, line.suffixColor)
+            }
         }
     }
 
@@ -173,7 +177,7 @@ object HudManager {
         val textRenderer = MinecraftClient.getInstance().textRenderer
         var maxWidth = 0
         for (line in lines) {
-            val fullText = "${line.label}$LABEL_SEPARATOR${line.value}"
+            val fullText = "${line.label}$LABEL_SEPARATOR${line.value}${line.suffix}"
             val width = textRenderer.getWidth(fullText)
             if (width > maxWidth) maxWidth = width
         }

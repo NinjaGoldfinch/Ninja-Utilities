@@ -7,9 +7,16 @@ import com.ninjagoldfinch.nz.ninja_utils.api.publicapi.HypixelApiClient
 import com.ninjagoldfinch.nz.ninja_utils.config.ApiCategory
 import com.ninjagoldfinch.nz.ninja_utils.config.GeneralCategory
 import com.ninjagoldfinch.nz.ninja_utils.config.HudCategory
+import com.ninjagoldfinch.nz.ninja_utils.core.CoinChangeEvent
+import com.ninjagoldfinch.nz.ninja_utils.core.EventBus
 import com.ninjagoldfinch.nz.ninja_utils.core.HypixelState
+import com.ninjagoldfinch.nz.ninja_utils.core.RareDropEvent
+import com.ninjagoldfinch.nz.ninja_utils.features.stats.PingTracker
+import com.ninjagoldfinch.nz.ninja_utils.util.SkyBlockItemUtils
 import com.ninjagoldfinch.nz.ninja_utils.features.stats.SkillTracker
+import com.ninjagoldfinch.nz.ninja_utils.features.stats.SkillXpChecker
 import com.ninjagoldfinch.nz.ninja_utils.features.stats.SlayerTracker
+import com.ninjagoldfinch.nz.ninja_utils.features.stats.TPSTracker
 import com.ninjagoldfinch.nz.ninja_utils.logging.PerformanceMonitor
 import com.ninjagoldfinch.nz.ninja_utils.hud.elements.SkillProgressHud
 import com.ninjagoldfinch.nz.ninja_utils.parsers.ChatParser
@@ -17,12 +24,15 @@ import com.ninjagoldfinch.nz.ninja_utils.parsers.ScoreboardParser
 import com.ninjagoldfinch.nz.ninja_utils.parsers.TabListParser
 import java.text.NumberFormat
 import java.util.Locale
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.minecraft.client.MinecraftClient
 import net.minecraft.scoreboard.ScoreboardDisplaySlot
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
+import net.minecraft.util.Util
 
 object DevCommand {
 
@@ -116,6 +126,23 @@ object DevCommand {
                 1
             })
 
+            then(literal("ping").executes { ctx ->
+                sendPing(ctx.source)
+                1
+            })
+
+            then(literal("skills").executes { ctx ->
+                sendSkillChecker(ctx.source)
+                1
+            })
+
+            then(literal("item").executes { ctx ->
+                sendItemInfo(ctx.source)
+                1
+            })
+
+            then(SearchCommand.buildSearchSubtree())
+
             then(literal("colors").apply {
                 executes { ctx ->
                     sendColorsAll(ctx.source)
@@ -131,6 +158,33 @@ object DevCommand {
                 })
                 then(literal("tablist").executes { ctx ->
                     sendColorTabList(ctx.source)
+                    1
+                })
+            })
+
+            then(literal("simulate").apply {
+                then(literal("skill").executes { ctx ->
+                    simulateSkillXp(ctx.source)
+                    1
+                })
+                then(literal("slayer").executes { ctx ->
+                    simulateSlayer(ctx.source)
+                    1
+                })
+                then(literal("ping").executes { ctx ->
+                    simulatePing(ctx.source)
+                    1
+                })
+                then(literal("coins").executes { ctx ->
+                    simulateCoins(ctx.source)
+                    1
+                })
+                then(literal("drop").executes { ctx ->
+                    simulateDrop(ctx.source)
+                    1
+                })
+                then(literal("reset").executes { ctx ->
+                    simulateReset(ctx.source)
                     1
                 })
             })
@@ -406,6 +460,174 @@ object DevCommand {
         messages.forEachIndexed { i, line ->
             msg(source, "  [$i] ${escapeFormatting(line)}", Formatting.GRAY)
         }
+    }
+
+    // ── Ping inspection ────────────────────────────────────────────────
+
+    private fun sendPing(source: FabricClientCommandSource) {
+        header(source, "Ping Tracker")
+        val ping = PingTracker.ping
+        val display = PingTracker.displayPing
+        val avg = PingTracker.averagePing
+        msg(source, "latest: ${if (ping > 0) "${ping}ms" else "no data"}")
+        msg(source, "display: ${if (display > 0) "${display}ms" else "no data"} (updates every 2.5s or on spike)")
+        msg(source, "average: ${if (avg > 0) "${avg}ms" else "no data"}")
+    }
+
+    // ── Item inspection ────────────────────────────────────────────────
+
+    private fun sendItemInfo(source: FabricClientCommandSource) {
+        val player = MinecraftClient.getInstance().player
+        if (player == null) {
+            msg(source, "Not in-game", Formatting.RED)
+            return
+        }
+        header(source, "Held Item Debug")
+        val stack = player.mainHandStack
+        if (stack.isEmpty) {
+            msg(source, "Not holding an item", Formatting.GRAY)
+            return
+        }
+        msg(source, "name: ${stack.name.string}")
+        msg(source, "mcId: ${stack.item}", Formatting.GRAY)
+
+        val itemId = SkyBlockItemUtils.getItemId(stack)
+        msg(source, "skyblockId: ${itemId ?: "none"}")
+
+        // Dump all components on the item
+        msg(source, "Components:", Formatting.GRAY)
+        for (component in stack.components) {
+            val type = component.type()
+            val value = component.value()
+            msg(source, "  ${type}: ${value?.javaClass?.simpleName}", Formatting.DARK_GRAY)
+        }
+
+        // Dump custom data NBT
+        val customNbt = SkyBlockItemUtils.getCustomData(stack)
+        if (customNbt != null) {
+            msg(source, "CustomData keys: ${customNbt.keys.joinToString(", ")}", Formatting.GRAY)
+            msg(source, "CustomData raw: $customNbt", Formatting.DARK_GRAY)
+        } else {
+            msg(source, "No custom data", Formatting.GRAY)
+        }
+    }
+
+    // ── Skill XP checker ──────────────────────────────────────────────────
+
+    private fun sendSkillChecker(source: FabricClientCommandSource) {
+        val fmt = NumberFormat.getNumberInstance(Locale.US)
+        val lastRead = SkillXpChecker.lastMenuReadTime
+        if (lastRead == 0L) {
+            header(source, "Skill XP Checker")
+            msg(source, "No skill menu data yet. Open /skills in-game to capture XP values.", Formatting.GRAY)
+
+            // Still show tracked gains if any
+            val allRates = SkillTracker.getAllRates()
+            if (allRates.isNotEmpty()) {
+                header(source, "Tracked Gains (no menu baseline)")
+                allRates.forEach { (skill, rate) ->
+                    msg(source, "$skill: +${fmt.format(rate.totalGained.toLong())} XP (${String.format("%.0f", rate.xpPerMinute)} XP/min)")
+                }
+            }
+            return
+        }
+
+        val ageSeconds = (System.currentTimeMillis() - lastRead) / 1000
+        header(source, "Skill XP Checker (menu read ${ageSeconds}s ago)")
+
+        val comparisons = SkillXpChecker.compare()
+        if (comparisons.isEmpty()) {
+            msg(source, "No data to compare", Formatting.GRAY)
+            return
+        }
+
+        for (comp in comparisons) {
+            val menuStr = if (comp.menuXp != null) {
+                "${fmt.format(comp.menuXp)}/${fmt.format(comp.menuRequired)} (${String.format("%.1f", comp.menuPercent)}%)"
+            } else {
+                "not in menu"
+            }
+            val gainStr = if (comp.trackedGain > 0) {
+                "+${fmt.format(comp.trackedGain.toLong())} (${String.format("%.0f", comp.trackedRate)} XP/min)"
+            } else {
+                "no gains tracked"
+            }
+
+            msg(source, "\u00a7e${comp.skill}:", Formatting.YELLOW)
+            msg(source, "  Menu: $menuStr", Formatting.GRAY)
+            msg(source, "  Tracked: $gainStr", Formatting.GRAY)
+        }
+
+        msg(source, "\u00a77Tip: Open /skills again to refresh the baseline", Formatting.GRAY)
+    }
+
+    // ── Simulation commands ──────────────────────────────────────────────
+
+    private fun simulateSkillXp(source: FabricClientCommandSource) {
+        val skill = "Mining"
+        val xpGain = 1250.0
+        val current = 84_350L
+        val required = 100_000L
+
+        SkillTracker.recordXpGain(skill, xpGain)
+        SkillProgressHud.recordXpGain(skill, xpGain, current, required)
+        msg(source, "Simulated +${xpGain.toLong()} $skill XP ($current/$required)", Formatting.GREEN)
+        msg(source, "Run multiple times to build up XP/min rate", Formatting.GRAY)
+    }
+
+    private fun simulateSlayer(source: FabricClientCommandSource) {
+        msg(source, "Simulating slayer lifecycle...", Formatting.YELLOW)
+
+        SlayerTracker.suppressScoreboardUpdates = true
+        SlayerTracker.updateFromScoreboard("Revenant Horror IV")
+        SlayerTracker.onQuestStarted()
+        msg(source, "Quest started: Revenant Horror IV", Formatting.GREEN)
+
+        CompletableFuture.delayedExecutor(2, TimeUnit.SECONDS).execute {
+            MinecraftClient.getInstance().execute {
+                SlayerTracker.onBossSpawned()
+                msg(source, "Boss spawned! (2s after start)", Formatting.GOLD)
+            }
+        }
+
+        CompletableFuture.delayedExecutor(4, TimeUnit.SECONDS).execute {
+            MinecraftClient.getInstance().execute {
+                SlayerTracker.onBossSlain()
+                SlayerTracker.suppressScoreboardUpdates = false
+                msg(source, "Boss slain! (2s kill time)", Formatting.GREEN)
+            }
+        }
+    }
+
+    private fun simulatePing(source: FabricClientCommandSource) {
+        val baseTime = Util.getMeasuringTimeMs()
+        val fakePings = listOf(95, 102, 88, 110, 97, 135, 80, 105, 92, 200)
+        fakePings.forEach { ping ->
+            PingTracker.onPingResult(baseTime - ping)
+        }
+        msg(source, "Injected ${fakePings.size} ping samples (${fakePings.min()}-${fakePings.max()}ms)", Formatting.GREEN)
+        msg(source, "Current: ${PingTracker.ping}ms | Average: ${PingTracker.averagePing}ms", Formatting.GRAY)
+    }
+
+    private fun simulateCoins(source: FabricClientCommandSource) {
+        val event = CoinChangeEvent(50_000L, "Bazaar Sale")
+        EventBus.post(event)
+        msg(source, "Fired CoinChangeEvent(+50,000 from Bazaar Sale)", Formatting.GREEN)
+    }
+
+    private fun simulateDrop(source: FabricClientCommandSource) {
+        val event = RareDropEvent("Wither Chestplate")
+        EventBus.post(event)
+        msg(source, "Fired RareDropEvent(Wither Chestplate)", Formatting.GREEN)
+    }
+
+    private fun simulateReset(source: FabricClientCommandSource) {
+        PingTracker.reset()
+        TPSTracker.reset()
+        SlayerTracker.reset()
+        SkillTracker.reset()
+        SkillXpChecker.reset()
+        msg(source, "All trackers reset to initial state", Formatting.YELLOW)
     }
 
     private fun colored(value: Boolean): String =

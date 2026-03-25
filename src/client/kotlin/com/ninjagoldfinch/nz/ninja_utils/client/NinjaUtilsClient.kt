@@ -8,6 +8,7 @@ import com.ninjagoldfinch.nz.ninja_utils.config.DebugCategory
 import com.ninjagoldfinch.nz.ninja_utils.config.ModConfig
 import com.ninjagoldfinch.nz.ninja_utils.core.HypixelState
 import com.ninjagoldfinch.nz.ninja_utils.features.stats.SkillTracker
+import com.ninjagoldfinch.nz.ninja_utils.features.stats.SkillXpChecker
 import com.ninjagoldfinch.nz.ninja_utils.features.stats.SlayerTracker
 import com.ninjagoldfinch.nz.ninja_utils.features.stats.PingTracker
 import com.ninjagoldfinch.nz.ninja_utils.features.stats.TPSTracker
@@ -18,6 +19,7 @@ import com.ninjagoldfinch.nz.ninja_utils.logging.ModLogger
 import com.ninjagoldfinch.nz.ninja_utils.logging.PerformanceMonitor
 import com.ninjagoldfinch.nz.ninja_utils.parsers.ChatParser
 import com.ninjagoldfinch.nz.ninja_utils.parsers.ScoreboardParser
+import com.ninjagoldfinch.nz.ninja_utils.parsers.ScreenInterceptor
 import com.ninjagoldfinch.nz.ninja_utils.parsers.TabListParser
 import com.teamresourceful.resourcefulconfig.api.client.ResourcefulConfigScreen
 import net.fabricmc.api.ClientModInitializer
@@ -55,6 +57,7 @@ object NinjaUtilsClient : ClientModInitializer {
             HypixelState.reset()
             SlayerTracker.reset()
             SkillTracker.reset()
+            SkillXpChecker.reset()
             TPSTracker.reset()
             PingTracker.reset()
             HypixelApiClient.invalidateAll()
@@ -102,10 +105,13 @@ object NinjaUtilsClient : ClientModInitializer {
             }
         }
 
-        // 5. HUD system
+        // 5. Screen interceptor (reads SkyBlock menus)
+        ScreenInterceptor.initialize()
+
+        // 6. HUD system
         HudManager.initialize()
 
-        // 6. Parsers — scoreboard & tab list on tick, and pending screen opener
+        // 7. Parsers — scoreboard & tab list on tick, and pending screen opener
         ClientTickEvents.END_CLIENT_TICK.register { client ->
             PerformanceMonitor.beginTick()
 
@@ -140,7 +146,7 @@ object NinjaUtilsClient : ClientModInitializer {
             PerformanceMonitor.endTick()
         }
 
-        // 7. Chat parser
+        // 8. Chat parser
         ChatParser.registerDefaultHandlers()
         ClientReceiveMessageEvents.GAME.register { message, overlay ->
             ChatParser.onChatMessage(message, overlay)

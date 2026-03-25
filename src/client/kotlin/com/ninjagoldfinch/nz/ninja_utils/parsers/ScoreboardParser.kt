@@ -172,16 +172,18 @@ object ScoreboardParser {
         }
         SlayerTracker.updateFromScoreboard(parsed.slayerQuest)
 
-        // Detect boss spawn from scoreboard
-        if (parsed.slayerBossSpawned && !SlayerTracker.bossSpawned) {
-            logger.info("Slayer boss spawned (detected from scoreboard)")
-            SlayerTracker.onBossSpawned()
-            EventBus.post(SlayerSpawnedEvent(SlayerTracker.activeQuest))
-        } else if (!parsed.slayerBossSpawned && SlayerTracker.bossSpawned) {
-            // "Slay the boss!" disappeared — boss was killed
-            logger.info("Slayer boss no longer on scoreboard, resetting boss state")
-            SlayerTracker.onBossSlain()
-            EventBus.post(SlayerCompleteEvent(SlayerTracker.activeQuest))
+        // Detect boss spawn from scoreboard (suppressed during simulations)
+        if (!SlayerTracker.suppressScoreboardUpdates) {
+            if (parsed.slayerBossSpawned && !SlayerTracker.bossSpawned) {
+                logger.info("Slayer boss spawned (detected from scoreboard)")
+                SlayerTracker.onBossSpawned()
+                EventBus.post(SlayerSpawnedEvent(SlayerTracker.activeQuest))
+            } else if (!parsed.slayerBossSpawned && SlayerTracker.bossSpawned) {
+                // "Slay the boss!" disappeared — boss was killed
+                logger.info("Slayer boss no longer on scoreboard, resetting boss state")
+                SlayerTracker.onBossSlain()
+                EventBus.post(SlayerCompleteEvent(SlayerTracker.activeQuest))
+            }
         }
 
         return ScoreboardData(

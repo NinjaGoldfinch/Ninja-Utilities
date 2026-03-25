@@ -9,7 +9,7 @@ object SkillTracker {
     private const val RATE_WINDOW_MS = 60_000L
 
     /** Time source, overridable for testing. */
-    var timeProvider: () -> Long = { timeProvider() }
+    var timeProvider: () -> Long = { System.currentTimeMillis() }
 
     data class XpEntry(val xpGain: Double, val timestamp: Long)
 

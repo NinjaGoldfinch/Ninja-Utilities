@@ -44,5 +44,7 @@ data class HudLine(
     val label: String,
     val value: String,
     val labelColor: Int = 0xFFAAAAAA.toInt(),
-    val valueColor: Int = 0xFFFFFFFF.toInt()
+    val valueColor: Int = 0xFFFFFFFF.toInt(),
+    val suffix: String = "",
+    val suffixColor: Int = 0xFF888888.toInt()
 )

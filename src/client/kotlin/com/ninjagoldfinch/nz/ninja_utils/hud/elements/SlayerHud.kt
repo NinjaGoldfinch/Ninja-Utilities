@@ -4,6 +4,7 @@ import com.ninjagoldfinch.nz.ninja_utils.config.HudCategory
 import com.ninjagoldfinch.nz.ninja_utils.features.stats.SlayerTracker
 import com.ninjagoldfinch.nz.ninja_utils.hud.HudElement
 import com.ninjagoldfinch.nz.ninja_utils.hud.HudLine
+import com.ninjagoldfinch.nz.ninja_utils.util.TextUtils.formatDuration
 
 object SlayerHud : HudElement("slayer", "Slayer") {
 
@@ -18,6 +19,10 @@ object SlayerHud : HudElement("slayer", "Slayer") {
             quest
         }
 
-        return HudLine("Slayer", value, valueColor = 0xFFFF5555.toInt())
+        val spawnSuffix = if (SlayerTracker.bossSpawned) {
+            SlayerTracker.spawnTime?.let { " (${formatDuration(it)})" } ?: ""
+        } else ""
+
+        return HudLine("Slayer", value, valueColor = 0xFFFF5555.toInt(), suffix = spawnSuffix)
     }
 }

@@ -11,4 +11,14 @@ object TextUtils {
 
     fun stripFormattingAndInvisible(text: String): String =
         INVISIBLE_CHARS_REGEX.replace(FORMATTING_CODE_REGEX.replace(text, ""), "")
+
+    /**
+     * Formats a duration in seconds. Under 60s: "42.5s". 60s+: "1m32s".
+     */
+    fun formatDuration(seconds: Double): String {
+        if (seconds < 60.0) return "${"%.1f".format(seconds)}s"
+        val mins = (seconds / 60).toInt()
+        val secs = (seconds % 60).toInt()
+        return "${mins}m${secs}s"
+    }
 }

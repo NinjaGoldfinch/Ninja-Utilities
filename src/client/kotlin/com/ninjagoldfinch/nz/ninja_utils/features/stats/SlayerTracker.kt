@@ -3,12 +3,16 @@ package com.ninjagoldfinch.nz.ninja_utils.features.stats
 import com.ninjagoldfinch.nz.ninja_utils.config.SkyblockCategory
 import com.ninjagoldfinch.nz.ninja_utils.logging.ModLogger
 import com.ninjagoldfinch.nz.ninja_utils.util.ChatUtils
+import com.ninjagoldfinch.nz.ninja_utils.util.TextUtils
 
 object SlayerTracker {
     private val logger = ModLogger.category("Slayer")
 
     /** Time source, overridable for testing. */
-    var timeProvider: () -> Long = { timeProvider() }
+    var timeProvider: () -> Long = { System.currentTimeMillis() }
+
+    /** When true, scoreboard parser won't override slayer state (used by simulate commands). */
+    var suppressScoreboardUpdates: Boolean = false
 
     var activeQuest: String? = null
         private set
@@ -17,6 +21,9 @@ object SlayerTracker {
     var bossSpawned: Boolean = false
         private set
     var bossSpawnTime: Long = 0
+        private set
+    /** Time in seconds it took to spawn the boss (quest start → boss spawn). */
+    var spawnTime: Double? = null
         private set
     var lastCompletionTime: Long = 0
         private set
@@ -37,10 +44,13 @@ object SlayerTracker {
     fun onBossSpawned() {
         bossSpawned = true
         bossSpawnTime = timeProvider()
-        logger.info("Slayer boss spawned!")
+        spawnTime = if (questStartTime > 0) (bossSpawnTime - questStartTime) / 1000.0 else null
+
+        val spawnStr = spawnTime?.let { " (${TextUtils.formatDuration(it)})" } ?: ""
+        logger.info("Slayer boss spawned!$spawnStr")
 
         if (SkyblockCategory.slayerBossAlert) {
-            sendAlert("\u00a7c\u00a7lSLAYER BOSS SPAWNED!")
+            sendAlert("\u00a7c\u00a7lSLAYER BOSS SPAWNED!$spawnStr")
         }
     }
 
@@ -53,7 +63,7 @@ object SlayerTracker {
         lastCompletionTime = timeProvider()
         bossSpawned = false
 
-        val durationStr = if (duration != null) " in ${"%.1f".format(duration)}s" else ""
+        val durationStr = if (duration != null) " in ${TextUtils.formatDuration(duration)}" else ""
         logger.info("Slayer boss slain$durationStr (session total: $completionsThisSession)")
 
         if (SkyblockCategory.slayerBossAlert) {
@@ -70,7 +80,9 @@ object SlayerTracker {
         questStartTime = 0
         bossSpawned = false
         bossSpawnTime = 0
+        spawnTime = null
         completionsThisSession = 0
+        suppressScoreboardUpdates = false
     }
 
     private fun sendAlert(message: String) {
