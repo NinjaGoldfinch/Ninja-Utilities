@@ -15,8 +15,8 @@ object InventorySnapshotTracker {
 
     private var previousSnapshot: Map<String, SnapshotEntry>? = null
 
-    /** Ticks to skip after a world change before diffing snapshots. */
-    private const val GRACE_TICKS = 40 // ~2 seconds at 20 TPS
+    /** Snapshot cycles to skip after a world change before diffing. Called every 10 game ticks (~0.5s each). */
+    private const val GRACE_CYCLES = 4 // 4 × 0.5s = ~2 seconds
     private var gracePeriodRemaining = 0
 
     /** Slot range for player inventory (hotbar + main inventory), excluding armor. */
@@ -24,17 +24,17 @@ object InventorySnapshotTracker {
 
     fun initialize() {
         EventBus.subscribe<IslandChangeEvent> {
-            logger.debug("Island changed, suppressing inventory snapshot for ${GRACE_TICKS} ticks")
+            logger.debug("Island changed, suppressing inventory snapshot for ${GRACE_CYCLES} ticks")
             previousSnapshot = null
-            gracePeriodRemaining = GRACE_TICKS
+            gracePeriodRemaining = GRACE_CYCLES
         }
     }
 
     /** Called on server join to suppress false positives from inventory refill. */
     fun onJoinServer() {
-        logger.debug("Server joined, suppressing inventory snapshot for ${GRACE_TICKS} ticks")
+        logger.debug("Server joined, suppressing inventory snapshot for ${GRACE_CYCLES} ticks")
         previousSnapshot = null
-        gracePeriodRemaining = GRACE_TICKS
+        gracePeriodRemaining = GRACE_CYCLES
     }
 
     /**
