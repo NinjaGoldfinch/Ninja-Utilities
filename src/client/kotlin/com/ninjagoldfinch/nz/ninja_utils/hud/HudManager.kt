@@ -90,8 +90,8 @@ object HudManager {
         logger.info("HUD system initialized with ${elements.size} elements")
     }
 
-    /** All registered elements (excluding debug overlay). */
-    fun getMainElements(): List<HudElement> = elements.filter { it.id != "debug_overlay" }
+    /** All registered elements (excluding separate panels). */
+    fun getMainElements(): List<HudElement> = elements.filter { it.id != "debug_overlay" && it.id != "itemGains" }
 
     /** All registered elements including debug overlay. */
     fun getElements(): List<HudElement> = elements
@@ -100,7 +100,7 @@ object HudManager {
     fun collectMainLines(): List<HudLine> {
         val lines = mutableListOf<HudLine>()
         for (element in elements) {
-            if (element.id == "debug_overlay") continue
+            if (element.id == "debug_overlay" || element.id == "itemGains") continue
             if (!element.isEnabled()) continue
             lines.addAll(element.getLines())
         }
@@ -138,6 +138,17 @@ object HudManager {
             val x = if (scale != 1.0f) (pos.x / scale).toInt() else pos.x
             val y = if (scale != 1.0f) (pos.y / scale).toInt() else pos.y
             renderPanel(drawContext, mainLines, x, y)
+        }
+
+        // Item gains — separate panel
+        if (ItemGainHud.isEnabled()) {
+            val itemLines = ItemGainHud.getLines()
+            if (itemLines.isNotEmpty()) {
+                val pos = HudPositions.getPosition(ItemGainHud.id)
+                val x = if (scale != 1.0f) (pos.x / scale).toInt() else pos.x
+                val y = if (scale != 1.0f) (pos.y / scale).toInt() else pos.y
+                renderPanel(drawContext, itemLines, x, y)
+            }
         }
 
         // Debug overlay — separate panel
