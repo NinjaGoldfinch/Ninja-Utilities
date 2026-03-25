@@ -101,11 +101,11 @@ object ChatParser {
      * like "+4x Enchanted Diamond" on separate lines.
      */
     private fun parseSackHoverText(message: Text) {
-        // Walk all text components looking for hover events
-        val hoverTexts = mutableListOf<String>()
+        // Walk all text components looking for hover events, deduplicate
+        val hoverTexts = mutableSetOf<String>()
         collectHoverTexts(message, hoverTexts)
 
-        logger.debug("Sack hover: found ${hoverTexts.size} hover text(s)")
+        logger.debug("Sack hover: found ${hoverTexts.size} unique hover text(s)")
         for (hoverText in hoverTexts) {
             logger.debug("Sack hover raw: '$hoverText'")
             val lines = hoverText.split("\n")
@@ -126,7 +126,7 @@ object ChatParser {
         }
     }
 
-    private fun collectHoverTexts(text: Text, result: MutableList<String>) {
+    private fun collectHoverTexts(text: Text, result: MutableSet<String>) {
         val hover = text.style.hoverEvent
         if (hover is HoverEvent.ShowText) {
             result.add(hover.value.string)
