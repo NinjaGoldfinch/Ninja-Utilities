@@ -7,6 +7,9 @@ import com.ninjagoldfinch.nz.ninja_utils.api.publicapi.HypixelApiClient
 import com.ninjagoldfinch.nz.ninja_utils.config.DebugCategory
 import com.ninjagoldfinch.nz.ninja_utils.config.ModConfig
 import com.ninjagoldfinch.nz.ninja_utils.core.HypixelState
+import com.ninjagoldfinch.nz.ninja_utils.config.SkyblockCategory
+import com.ninjagoldfinch.nz.ninja_utils.features.stats.InventorySnapshotTracker
+import com.ninjagoldfinch.nz.ninja_utils.features.stats.ItemTracker
 import com.ninjagoldfinch.nz.ninja_utils.features.stats.SkillTracker
 import com.ninjagoldfinch.nz.ninja_utils.features.stats.SkillXpChecker
 import com.ninjagoldfinch.nz.ninja_utils.features.stats.SlayerTracker
@@ -34,6 +37,7 @@ import net.minecraft.client.gui.screen.Screen
 object NinjaUtilsClient : ClientModInitializer {
     private var tickCounter = 0
     private var pingCounter = 0
+    private var invSnapshotCounter = 0
 
     @Volatile
     @JvmField
@@ -51,6 +55,7 @@ object NinjaUtilsClient : ClientModInitializer {
         // 3. Connection handlers
         ClientPlayConnectionEvents.JOIN.register { _, _, _ ->
             WarningManager.onJoinServer()
+            InventorySnapshotTracker.onJoinServer()
         }
 
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
@@ -60,6 +65,8 @@ object NinjaUtilsClient : ClientModInitializer {
             SkillXpChecker.reset()
             TPSTracker.reset()
             PingTracker.reset()
+            ItemTracker.reset()
+            InventorySnapshotTracker.reset()
             HypixelApiClient.invalidateAll()
             BackendClient.invalidateAll()
             WarningManager.onDisconnect()
@@ -105,7 +112,10 @@ object NinjaUtilsClient : ClientModInitializer {
             }
         }
 
-        // 5. Screen interceptor (reads SkyBlock menus)
+        // 5. Inventory snapshot tracker (subscribes to IslandChangeEvent)
+        InventorySnapshotTracker.initialize()
+
+        // 6. Screen interceptor (reads SkyBlock menus)
         ScreenInterceptor.initialize()
 
         // 6. HUD system
@@ -113,6 +123,9 @@ object NinjaUtilsClient : ClientModInitializer {
 
         // 7. Parsers — scoreboard & tab list on tick, and pending screen opener
         ClientTickEvents.END_CLIENT_TICK.register { client ->
+            // Sync log level from config (so changes take effect without restart)
+            ModLogger.level = DebugCategory.logLevel
+
             PerformanceMonitor.beginTick()
 
             // TPS tracking — count ticks that received server packets
@@ -141,6 +154,15 @@ object NinjaUtilsClient : ClientModInitializer {
             if (pingCounter >= 100) {
                 pingCounter = 0
                 PingTracker.sendPing()
+            }
+
+            // Inventory snapshot every 0.5 seconds (10 ticks)
+            if (SkyblockCategory.trackItemGains && SkyblockCategory.trackInventoryGains) {
+                invSnapshotCounter++
+                if (invSnapshotCounter >= 10) {
+                    invSnapshotCounter = 0
+                    InventorySnapshotTracker.tick()
+                }
             }
 
             PerformanceMonitor.endTick()

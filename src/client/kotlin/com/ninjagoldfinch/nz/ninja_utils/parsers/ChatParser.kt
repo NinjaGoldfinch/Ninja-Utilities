@@ -4,14 +4,18 @@ import com.ninjagoldfinch.nz.ninja_utils.config.DebugCategory
 import com.ninjagoldfinch.nz.ninja_utils.core.CoinChangeEvent
 import com.ninjagoldfinch.nz.ninja_utils.core.EventBus
 import com.ninjagoldfinch.nz.ninja_utils.core.HypixelState
+import com.ninjagoldfinch.nz.ninja_utils.core.ItemGainEvent
+import com.ninjagoldfinch.nz.ninja_utils.core.ItemGainSource
 import com.ninjagoldfinch.nz.ninja_utils.core.RareDropEvent
 import com.ninjagoldfinch.nz.ninja_utils.core.SkillXpGainEvent
+import com.ninjagoldfinch.nz.ninja_utils.config.SkyblockCategory
 import com.ninjagoldfinch.nz.ninja_utils.core.SkyBlockIsland
 import com.ninjagoldfinch.nz.ninja_utils.core.SlayerCompleteEvent
 import com.ninjagoldfinch.nz.ninja_utils.features.stats.SlayerTracker
 import com.ninjagoldfinch.nz.ninja_utils.logging.ModLogger
 import com.ninjagoldfinch.nz.ninja_utils.util.RegexPatterns
 import com.ninjagoldfinch.nz.ninja_utils.util.TextUtils
+import net.minecraft.text.HoverEvent
 import net.minecraft.text.Text
 
 data class ChatHandler(
@@ -68,14 +72,68 @@ object ChatParser {
             }
         }
 
-        val raw = TextUtils.stripFormatting(message.string).trim()
+        val raw = TextUtils.stripFormattingAndInvisible(message.string).trim()
         if (raw.isBlank()) return
 
         if (DebugCategory.logChatMessages) {
             logger.debug("Chat: $raw")
         }
 
+        // Handle sack summary messages with hover text (e.g. "[Sacks] +4 items. (Last 5s.)")
+        if (raw.contains("[Sacks]")) {
+            if (!SkyblockCategory.trackItemGains || !SkyblockCategory.trackSackGains) {
+                logger.debug("Sack message ignored (trackItemGains=${SkyblockCategory.trackItemGains}, trackSackGains=${SkyblockCategory.trackSackGains})")
+            } else {
+                val summaryMatch = RegexPatterns.SACK_SUMMARY.containsMatchIn(raw)
+                logger.debug("Sack message detected, summary regex match=$summaryMatch, raw='$raw'")
+                if (summaryMatch) {
+                    parseSackHoverText(message)
+                }
+            }
+        }
+
         processMessage(raw)
+    }
+
+    /**
+     * Extracts item gain data from sack summary hover text.
+     * Hypixel sends "[Sacks] +N items." with hover text containing individual items
+     * like "+4x Enchanted Diamond" on separate lines.
+     */
+    private fun parseSackHoverText(message: Text) {
+        // Walk all text components looking for hover events, deduplicate
+        val hoverTexts = mutableSetOf<String>()
+        collectHoverTexts(message, hoverTexts)
+
+        logger.debug("Sack hover: found ${hoverTexts.size} unique hover text(s)")
+        for (hoverText in hoverTexts) {
+            logger.debug("Sack hover raw: '$hoverText'")
+            val lines = hoverText.split("\n")
+            for (line in lines) {
+                val stripped = TextUtils.stripFormattingAndInvisible(line).trim()
+                val match = RegexPatterns.SACK_HOVER_ITEM.find(stripped) ?: continue
+                val amount = match.groupValues[1].replace(",", "").toIntOrNull() ?: continue
+                if (amount <= 0) continue
+                val itemName = match.groupValues[2].trim()
+                logger.debug("Sack (hover): +$amount $itemName")
+                EventBus.post(ItemGainEvent(
+                    itemId = itemName.uppercase().replace(" ", "_"),
+                    displayName = itemName,
+                    amount = amount,
+                    source = ItemGainSource.SACK
+                ))
+            }
+        }
+    }
+
+    private fun collectHoverTexts(text: Text, result: MutableSet<String>) {
+        val hover = text.style.hoverEvent
+        if (hover is HoverEvent.ShowText) {
+            result.add(hover.value.string)
+        }
+        for (sibling in text.siblings) {
+            collectHoverTexts(sibling, result)
+        }
     }
 
     fun processMessage(raw: String) {
@@ -139,5 +197,9 @@ object ChatParser {
                 logger.info("Pest cleared (count updated via scoreboard)")
             }
         })
+
+        // Note: Sack messages are handled via hover text parsing in onChatMessage(),
+        // not here, because Hypixel sends "[Sacks] +N items." with item details
+        // only in the hover tooltip.
     }
 }

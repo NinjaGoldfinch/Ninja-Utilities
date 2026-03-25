@@ -22,11 +22,13 @@ object ModLogger {
     }
 
     fun debug(category: String, msg: String) {
-        if (level <= LogLevel.DEBUG) logger.debug("[$category] $msg")
+        // Log4j defaults to INFO level in Minecraft, so logger.debug() is silently dropped.
+        // Use logger.info() with a DEBUG prefix to ensure visibility.
+        if (level <= LogLevel.DEBUG) logger.info("[DEBUG] [$category] $msg")
     }
 
     fun trace(category: String, msg: String) {
-        if (level <= LogLevel.TRACE) logger.trace("[$category] $msg")
+        if (level <= LogLevel.TRACE) logger.info("[TRACE] [$category] $msg")
     }
 
     fun category(name: String) = CategoryLogger(name)

@@ -5,10 +5,13 @@ import com.ninjagoldfinch.nz.ninja_utils.config.GeneralCategory
 import com.ninjagoldfinch.nz.ninja_utils.config.HudCategory
 import com.ninjagoldfinch.nz.ninja_utils.core.EventBus
 import com.ninjagoldfinch.nz.ninja_utils.core.HypixelState
+import com.ninjagoldfinch.nz.ninja_utils.core.ItemGainEvent
 import com.ninjagoldfinch.nz.ninja_utils.core.SkillXpGainEvent
+import com.ninjagoldfinch.nz.ninja_utils.features.stats.ItemTracker
 import com.ninjagoldfinch.nz.ninja_utils.features.stats.SkillTracker
 import com.ninjagoldfinch.nz.ninja_utils.hud.elements.BitsHud
 import com.ninjagoldfinch.nz.ninja_utils.hud.elements.CoinPurseHud
+import com.ninjagoldfinch.nz.ninja_utils.hud.elements.ItemGainHud
 import com.ninjagoldfinch.nz.ninja_utils.hud.elements.CopperHud
 import com.ninjagoldfinch.nz.ninja_utils.hud.elements.PestHud
 import com.ninjagoldfinch.nz.ninja_utils.hud.elements.SowdustHud
@@ -62,11 +65,17 @@ object HudManager {
         register(CopperHud)
         register(SowdustHud)
         register(PestHud)
+        register(ItemGainHud)
         register(DebugHudElement)
 
         EventBus.subscribe<SkillXpGainEvent> { event ->
             SkillProgressHud.recordXpGain(event.skill, event.xpGain, event.current, event.required)
             SkillTracker.recordXpGain(event.skill, event.xpGain)
+        }
+
+        EventBus.subscribe<ItemGainEvent> { event ->
+            ItemTracker.recordGain(event)
+            ItemGainHud.recordGain(event)
         }
 
         HudPositions.load()
@@ -81,8 +90,8 @@ object HudManager {
         logger.info("HUD system initialized with ${elements.size} elements")
     }
 
-    /** All registered elements (excluding debug overlay). */
-    fun getMainElements(): List<HudElement> = elements.filter { it.id != "debug_overlay" }
+    /** All registered elements (excluding separate panels). */
+    fun getMainElements(): List<HudElement> = elements.filter { it.id != "debug_overlay" && it.id != "itemGains" }
 
     /** All registered elements including debug overlay. */
     fun getElements(): List<HudElement> = elements
@@ -91,7 +100,7 @@ object HudManager {
     fun collectMainLines(): List<HudLine> {
         val lines = mutableListOf<HudLine>()
         for (element in elements) {
-            if (element.id == "debug_overlay") continue
+            if (element.id == "debug_overlay" || element.id == "itemGains") continue
             if (!element.isEnabled()) continue
             lines.addAll(element.getLines())
         }
@@ -129,6 +138,17 @@ object HudManager {
             val x = if (scale != 1.0f) (pos.x / scale).toInt() else pos.x
             val y = if (scale != 1.0f) (pos.y / scale).toInt() else pos.y
             renderPanel(drawContext, mainLines, x, y)
+        }
+
+        // Item gains — separate panel
+        if (ItemGainHud.isEnabled()) {
+            val itemLines = ItemGainHud.getLines()
+            if (itemLines.isNotEmpty()) {
+                val pos = HudPositions.getPosition(ItemGainHud.id)
+                val x = if (scale != 1.0f) (pos.x / scale).toInt() else pos.x
+                val y = if (scale != 1.0f) (pos.y / scale).toInt() else pos.y
+                renderPanel(drawContext, itemLines, x, y)
+            }
         }
 
         // Debug overlay — separate panel

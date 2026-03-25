@@ -32,6 +32,11 @@ object RegexPatterns {
     val SLAYER_SPAWNED = Regex("""SLAYER QUEST STARTED!""")
     val SLAYER_COMPLETE = Regex("""NICE! SLAYER BOSS SLAIN!""")
 
+    // Sack patterns
+    val SACK_CHANGE = Regex("""\[Sacks] ([+-][\d,]+)x? (.+)""")
+    val SACK_SUMMARY = Regex("""\[Sacks] \+(\d+) items?\.""")
+    val SACK_HOVER_ITEM = Regex("""([+-][\d,]+)x? (.+)""")
+
     // Connection
     val SKYBLOCK_JOIN = Regex("""Welcome to Hypixel SkyBlock!""")
 }

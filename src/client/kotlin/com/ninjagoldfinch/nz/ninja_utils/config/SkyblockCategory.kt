@@ -52,6 +52,23 @@ class SkyblockCategory {
         @JvmField var slayerBossAlert: Boolean = false
 
         @ConfigOption.Separator(
+            value = "Item Tracking",
+            description = "Track item gains from inventory and sacks"
+        )
+
+        @ConfigEntry(id = "trackItemGains", translation = "Track Item Gains")
+        @Comment("Track item gains from inventory changes and sack messages")
+        @JvmField var trackItemGains: Boolean = true
+
+        @ConfigEntry(id = "trackSackGains", translation = "Track Sack Gains")
+        @Comment("Track items added to sacks via chat messages")
+        @JvmField var trackSackGains: Boolean = true
+
+        @ConfigEntry(id = "trackInventoryGains", translation = "Track Inventory Gains")
+        @Comment("Track items gained by comparing inventory snapshots")
+        @JvmField var trackInventoryGains: Boolean = true
+
+        @ConfigOption.Separator(
             value = "Tab List",
             description = "Data parsing from the player tab list"
         )

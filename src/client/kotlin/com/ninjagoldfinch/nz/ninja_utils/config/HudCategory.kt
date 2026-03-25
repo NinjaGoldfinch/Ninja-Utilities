@@ -66,6 +66,10 @@ class HudCategory {
         @Comment("Display the server's ticks per second")
         @JvmField var showTps: Boolean = false
 
+        @ConfigEntry(id = "showItemGains", translation = "Show Item Gains")
+        @Comment("Display recent item gains on the HUD")
+        @JvmField var showItemGains: Boolean = false
+
         @ConfigEntry(id = "showDebugOverlay", translation = "Show Debug Overlay")
         @Comment("Display a detailed debug info overlay")
         @JvmField var showDebugOverlay: Boolean = false

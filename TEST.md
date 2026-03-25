@@ -34,6 +34,7 @@ All dev commands are accessed via `/ninja_utils dev <subcommand>` in-game.
 | `/ninja_utils dev item` | Dump held item's SkyBlock ID and full ExtraAttributes NBT |
 | `/ninja_utils dev search` | Show held item's SkyBlock ID and attributes |
 | `/ninja_utils dev search <id>` | Search inventory + open container for items by Hypixel item ID |
+| `/ninja_utils dev items` | Item gain tracker — rates and totals per item |
 | `/ninja_utils dev colors` | Show raw formatting codes for scoreboard, tab list, and chat |
 | `/ninja_utils dev colors chat` | Chat formatting codes only |
 | `/ninja_utils dev colors scoreboard` | Scoreboard formatting codes only |
@@ -50,7 +51,8 @@ These commands inject fake data to test HUD elements and trackers without needin
 | `/ninja_utils dev simulate ping` | Inject 10 fake ping samples (80-200ms) to populate average ping display. |
 | `/ninja_utils dev simulate coins` | Fire a CoinChangeEvent (+50,000 coins from "Bazaar Sale"). |
 | `/ninja_utils dev simulate drop` | Fire a RareDropEvent ("Wither Chestplate"). |
-| `/ninja_utils dev simulate reset` | Reset all trackers (ping, TPS, slayer, skill) to initial state. |
+| `/ninja_utils dev simulate item` | Fire 2 fake ItemGainEvents (64x Enchanted Diamond from inventory, 128x Wheat from sack). |
+| `/ninja_utils dev simulate reset` | Reset all trackers (ping, TPS, slayer, skill, items) to initial state. |
 
 ## Testing Individual Features
 
@@ -60,6 +62,17 @@ These commands inject fake data to test HUD elements and trackers without needin
 3. The HUD shows current ping (color-coded) with average in grey brackets
 4. Use `/ninja_utils dev ping` to inspect current values and history
 5. Use `/ninja_utils dev simulate ping` to test with fake data
+
+### Item Gain Tracking
+1. Enable: Config screen → SkyBlock → `trackItemGains = true`
+2. Enable: Config screen → HUD → `showItemGains = true`
+3. Use `/ninja_utils dev simulate item` to test with fake data — HUD should show 2 items for 10 seconds
+4. Use `/ninja_utils dev items` to see tracked item rates
+5. For inventory tracking: enable `trackInventoryGains`, pick up items from ground or mob drops — gains appear on HUD
+6. For sack tracking: enable `trackSackGains`, add items to a sack — chat messages trigger gain events
+7. Open a container and kill a mob (or have lootshare) — inventory gains should still be tracked
+8. Switch islands — verify no false positives from inventory reset
+9. Use `/ninja_utils dev simulate reset` to clear all trackers
 
 ### Item Detection & Search
 1. Hold any SkyBlock item and run `/ninja_utils dev search` to see its Hypixel item ID
