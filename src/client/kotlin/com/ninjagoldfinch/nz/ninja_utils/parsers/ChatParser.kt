@@ -15,6 +15,8 @@ import com.ninjagoldfinch.nz.ninja_utils.features.stats.SlayerTracker
 import com.ninjagoldfinch.nz.ninja_utils.logging.ModLogger
 import com.ninjagoldfinch.nz.ninja_utils.util.RegexPatterns
 import com.ninjagoldfinch.nz.ninja_utils.util.TextUtils
+import net.minecraft.text.HoverEvent
+import net.minecraft.text.Style
 import net.minecraft.text.Text
 
 data class ChatHandler(
@@ -78,7 +80,53 @@ object ChatParser {
             logger.debug("Chat: $raw")
         }
 
+        // Handle sack summary messages with hover text (e.g. "[Sacks] +4 items. (Last 5s.)")
+        if (SkyblockCategory.trackItemGains && SkyblockCategory.trackSackGains) {
+            if (RegexPatterns.SACK_SUMMARY.containsMatchIn(raw)) {
+                parseSackHoverText(message)
+            }
+        }
+
         processMessage(raw)
+    }
+
+    /**
+     * Extracts item gain data from sack summary hover text.
+     * Hypixel sends "[Sacks] +N items." with hover text containing individual items
+     * like "+4x Enchanted Diamond" on separate lines.
+     */
+    private fun parseSackHoverText(message: Text) {
+        // Walk all text components looking for hover events
+        val hoverTexts = mutableListOf<String>()
+        collectHoverTexts(message, hoverTexts)
+
+        for (hoverText in hoverTexts) {
+            val lines = hoverText.split("\n")
+            for (line in lines) {
+                val stripped = TextUtils.stripFormatting(line).trim()
+                val match = RegexPatterns.SACK_HOVER_ITEM.find(stripped) ?: continue
+                val amount = match.groupValues[1].replace(",", "").toIntOrNull() ?: continue
+                if (amount <= 0) continue
+                val itemName = match.groupValues[2].trim()
+                logger.debug("Sack (hover): +$amount $itemName")
+                EventBus.post(ItemGainEvent(
+                    itemId = itemName.uppercase().replace(" ", "_"),
+                    displayName = itemName,
+                    amount = amount,
+                    source = ItemGainSource.SACK
+                ))
+            }
+        }
+    }
+
+    private fun collectHoverTexts(text: Text, result: MutableList<String>) {
+        val hover = text.style.hoverEvent
+        if (hover is HoverEvent.ShowText) {
+            result.add(hover.value.string)
+        }
+        for (sibling in text.siblings) {
+            collectHoverTexts(sibling, result)
+        }
     }
 
     fun processMessage(raw: String) {
