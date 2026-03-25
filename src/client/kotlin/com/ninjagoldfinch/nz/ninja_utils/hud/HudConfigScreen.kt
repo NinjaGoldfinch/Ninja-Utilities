@@ -3,6 +3,7 @@ package com.ninjagoldfinch.nz.ninja_utils.hud
 import com.ninjagoldfinch.nz.ninja_utils.config.DebugCategory
 import com.ninjagoldfinch.nz.ninja_utils.config.HudCategory
 import com.ninjagoldfinch.nz.ninja_utils.hud.elements.DebugHudElement
+import com.ninjagoldfinch.nz.ninja_utils.hud.elements.ItemGainHud
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
@@ -26,6 +27,7 @@ class HudConfigScreen : Screen(Text.literal("HUD Position Editor")) {
 
     private lateinit var mainPanel: PanelState
     private lateinit var debugPanel: PanelState
+    private lateinit var itemGainsPanel: PanelState
     private var dragTarget: PanelState? = null
     private var dragOffsetX = 0.0
     private var dragOffsetY = 0.0
@@ -46,6 +48,9 @@ class HudConfigScreen : Screen(Text.literal("HUD Position Editor")) {
 
         val debugPos = HudPositions.getPosition(DebugHudElement.id)
         debugPanel = PanelState(DebugHudElement.id, "Debug Overlay", debugPos.x, debugPos.y)
+
+        val itemGainsPos = HudPositions.getPosition(ItemGainHud.id)
+        itemGainsPanel = PanelState(ItemGainHud.id, "Item Gains", itemGainsPos.x, itemGainsPos.y)
     }
 
     private fun getMainLines(): List<HudLine> {
@@ -69,6 +74,17 @@ class HudConfigScreen : Screen(Text.literal("HUD Position Editor")) {
         return lines
     }
 
+    private fun getItemGainsLines(): List<HudLine> {
+        return if (ItemGainHud.isEnabled()) {
+            val live = ItemGainHud.getLines()
+            if (live.isNotEmpty()) live else ItemGainHud.getSampleData()
+        } else {
+            ItemGainHud.getSampleData().map {
+                HudLine(it.label, "(OFF)", labelColor = 0xFF666666.toInt(), valueColor = 0xFF666666.toInt())
+            }
+        }
+    }
+
     private fun getDebugLines(): List<HudLine> {
         return if (DebugHudElement.isEnabled()) {
             val live = DebugHudElement.getLines()
@@ -88,6 +104,10 @@ class HudConfigScreen : Screen(Text.literal("HUD Position Editor")) {
         // Render main panel
         val mainLines = getMainLines()
         renderConfigPanel(context, mainPanel, mainLines, tr)
+
+        // Render item gains panel
+        val itemGainsLines = getItemGainsLines()
+        renderConfigPanel(context, itemGainsPanel, itemGainsLines, tr)
 
         // Render debug panel
         val debugLines = getDebugLines()
@@ -114,7 +134,11 @@ class HudConfigScreen : Screen(Text.literal("HUD Position Editor")) {
         val titleWidth = tr.getWidth(panel.title) + HudManager.PADDING * 2
         val fullWidth = maxOf(panelWidth, titleWidth)
 
-        val isEnabled = if (panel.id == DebugHudElement.id) DebugHudElement.isEnabled() else true
+        val isEnabled = when (panel.id) {
+            DebugHudElement.id -> DebugHudElement.isEnabled()
+            ItemGainHud.id -> ItemGainHud.isEnabled()
+            else -> true
+        }
         val titleBg = if (isEnabled) 0xC0222222.toInt() else 0xC0440000.toInt()
         context.fill(panel.x, titleY, panel.x + fullWidth, panel.y, titleBg)
 
@@ -142,9 +166,13 @@ class HudConfigScreen : Screen(Text.literal("HUD Position Editor")) {
         val mx = click.x().toInt()
         val my = click.y().toInt()
 
-        // Check panels in order: debug first (on top), then main
-        for (panel in listOf(debugPanel, mainPanel)) {
-            val lines = if (panel.id == DebugHudElement.id) getDebugLines() else getMainLines()
+        // Check panels in order: debug first (on top), then item gains, then main
+        for (panel in listOf(debugPanel, itemGainsPanel, mainPanel)) {
+            val lines = when (panel.id) {
+                DebugHudElement.id -> getDebugLines()
+                ItemGainHud.id -> getItemGainsLines()
+                else -> getMainLines()
+            }
             if (lines.isEmpty()) continue
             val (panelWidth, panelHeight) = HudManager.getPanelSize(lines)
             val titleWidth = textRenderer.getWidth(panel.title) + HudManager.PADDING * 2
@@ -160,6 +188,8 @@ class HudConfigScreen : Screen(Text.literal("HUD Position Editor")) {
                 } else if (button == 1) {
                     if (panel.id == DebugHudElement.id) {
                         DebugCategory.debugOverlay = !DebugCategory.debugOverlay
+                    } else if (panel.id == ItemGainHud.id) {
+                        HudCategory.showItemGains = !HudCategory.showItemGains
                     } else {
                         // Find which line was clicked and toggle that element
                         val lineIndex = (my - panel.y - HudManager.PADDING) / HudManager.LINE_HEIGHT
@@ -197,7 +227,11 @@ class HudConfigScreen : Screen(Text.literal("HUD Position Editor")) {
         val target = dragTarget ?: return super.mouseDragged(click, offsetX, offsetY)
         if (click.buttonInfo().button() != 0) return super.mouseDragged(click, offsetX, offsetY)
 
-        val lines = if (target.id == DebugHudElement.id) getDebugLines() else getMainLines()
+        val lines = when (target.id) {
+            DebugHudElement.id -> getDebugLines()
+            ItemGainHud.id -> getItemGainsLines()
+            else -> getMainLines()
+        }
         if (lines.isEmpty()) return true
         val (panelWidth, panelHeight) = HudManager.getPanelSize(lines)
 
@@ -235,6 +269,7 @@ class HudConfigScreen : Screen(Text.literal("HUD Position Editor")) {
     override fun close() {
         HudPositions.setPosition(mainPanel.id, mainPanel.x, mainPanel.y)
         HudPositions.setPosition(debugPanel.id, debugPanel.x, debugPanel.y)
+        HudPositions.setPosition(itemGainsPanel.id, itemGainsPanel.x, itemGainsPanel.y)
         HudPositions.save()
         super.close()
     }

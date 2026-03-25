@@ -55,6 +55,7 @@ object NinjaUtilsClient : ClientModInitializer {
         // 3. Connection handlers
         ClientPlayConnectionEvents.JOIN.register { _, _, _ ->
             WarningManager.onJoinServer()
+            InventorySnapshotTracker.onJoinServer()
         }
 
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
