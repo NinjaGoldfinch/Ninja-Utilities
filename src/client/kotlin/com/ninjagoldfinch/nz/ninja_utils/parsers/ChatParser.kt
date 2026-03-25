@@ -16,7 +16,6 @@ import com.ninjagoldfinch.nz.ninja_utils.logging.ModLogger
 import com.ninjagoldfinch.nz.ninja_utils.util.RegexPatterns
 import com.ninjagoldfinch.nz.ninja_utils.util.TextUtils
 import net.minecraft.text.HoverEvent
-import net.minecraft.text.Style
 import net.minecraft.text.Text
 
 data class ChatHandler(
@@ -73,7 +72,7 @@ object ChatParser {
             }
         }
 
-        val raw = TextUtils.stripFormatting(message.string).trim()
+        val raw = TextUtils.stripFormattingAndInvisible(message.string).trim()
         if (raw.isBlank()) return
 
         if (DebugCategory.logChatMessages) {
@@ -81,9 +80,15 @@ object ChatParser {
         }
 
         // Handle sack summary messages with hover text (e.g. "[Sacks] +4 items. (Last 5s.)")
-        if (SkyblockCategory.trackItemGains && SkyblockCategory.trackSackGains) {
-            if (RegexPatterns.SACK_SUMMARY.containsMatchIn(raw)) {
-                parseSackHoverText(message)
+        if (raw.contains("[Sacks]")) {
+            if (!SkyblockCategory.trackItemGains || !SkyblockCategory.trackSackGains) {
+                logger.debug("Sack message ignored (trackItemGains=${SkyblockCategory.trackItemGains}, trackSackGains=${SkyblockCategory.trackSackGains})")
+            } else {
+                val summaryMatch = RegexPatterns.SACK_SUMMARY.containsMatchIn(raw)
+                logger.debug("Sack message detected, summary regex match=$summaryMatch, raw='$raw'")
+                if (summaryMatch) {
+                    parseSackHoverText(message)
+                }
             }
         }
 
@@ -100,10 +105,12 @@ object ChatParser {
         val hoverTexts = mutableListOf<String>()
         collectHoverTexts(message, hoverTexts)
 
+        logger.debug("Sack hover: found ${hoverTexts.size} hover text(s)")
         for (hoverText in hoverTexts) {
+            logger.debug("Sack hover raw: '$hoverText'")
             val lines = hoverText.split("\n")
             for (line in lines) {
-                val stripped = TextUtils.stripFormatting(line).trim()
+                val stripped = TextUtils.stripFormattingAndInvisible(line).trim()
                 val match = RegexPatterns.SACK_HOVER_ITEM.find(stripped) ?: continue
                 val amount = match.groupValues[1].replace(",", "").toIntOrNull() ?: continue
                 if (amount <= 0) continue

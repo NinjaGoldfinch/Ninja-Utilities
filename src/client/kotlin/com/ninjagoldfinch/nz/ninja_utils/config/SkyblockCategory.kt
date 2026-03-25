@@ -58,7 +58,7 @@ class SkyblockCategory {
 
         @ConfigEntry(id = "trackItemGains", translation = "Track Item Gains")
         @Comment("Track item gains from inventory changes and sack messages")
-        @JvmField var trackItemGains: Boolean = false
+        @JvmField var trackItemGains: Boolean = true
 
         @ConfigEntry(id = "trackSackGains", translation = "Track Sack Gains")
         @Comment("Track items added to sacks via chat messages")
