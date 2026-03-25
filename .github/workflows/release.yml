@@ -203,15 +203,20 @@ jobs:
             fi
 
             # Check if this version already exists on Modrinth
-            EXISTING_ID=$(curl -sf "https://api.modrinth.com/v2/project/${MODRINTH_PROJECT_ID}/version" \
+            EXISTING_ID=$(curl -s "https://api.modrinth.com/v2/project/${MODRINTH_PROJECT_ID}/version" \
               -H "Authorization: $MODRINTH_TOKEN" \
-              | jq -r --arg vn "$VERSION_NUMBER" '.[] | select(.version_number == $vn) | .id' || true)
+              | jq -r --arg vn "$VERSION_NUMBER" '.[] | select(.version_number == $vn) | .id // empty' || true)
 
-            if [ -n "$EXISTING_ID" ] && [ "$EXISTING_ID" != "null" ]; then
+            if [ -n "$EXISTING_ID" ]; then
               echo "Version ${VERSION_NUMBER} exists (ID: $EXISTING_ID), deleting before re-creating..."
-              curl -sf -X DELETE "https://api.modrinth.com/v2/version/${EXISTING_ID}" \
-                -H "Authorization: $MODRINTH_TOKEN"
-              echo "Deleted existing version"
+              DEL_RESPONSE=$(curl -s -w "\n%{http_code}" -X DELETE "https://api.modrinth.com/v2/version/${EXISTING_ID}" \
+                -H "Authorization: $MODRINTH_TOKEN")
+              DEL_CODE=$(echo "$DEL_RESPONSE" | tail -1)
+              if [ "$DEL_CODE" -ge 200 ] && [ "$DEL_CODE" -lt 300 ]; then
+                echo "Deleted existing version"
+              else
+                echo "::warning::Failed to delete existing version (HTTP $DEL_CODE), attempting to create anyway..."
+              fi
             fi
 
             DATA=$(jq -n \
@@ -235,12 +240,20 @@ jobs:
               }')
 
             echo "Publishing to Modrinth: ${VERSION_NUMBER} ($VERSION_TYPE)"
-            curl -sf -X POST "https://api.modrinth.com/v2/version" \
+            RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "https://api.modrinth.com/v2/version" \
               -H "Authorization: $MODRINTH_TOKEN" \
               -F "data=$DATA" \
-              -F "file=@$JAR_PATH"
+              -F "file=@$JAR_PATH")
 
-            echo "Published ${MC_VER} to Modrinth successfully"
+            HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+            BODY=$(echo "$RESPONSE" | sed '$d')
+
+            if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+              echo "Published ${MC_VER} to Modrinth successfully"
+            else
+              echo "::error::Modrinth publish failed for ${MC_VER} (HTTP $HTTP_CODE): $BODY"
+              exit 1
+            fi
           done
         env:
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
