@@ -198,18 +198,8 @@ object ChatParser {
             }
         })
 
-        register(ChatHandler("SackChange", RegexPatterns.SACK_CHANGE) { match ->
-            if (!SkyblockCategory.trackItemGains || !SkyblockCategory.trackSackGains) return@ChatHandler
-            val amount = match.groupValues[1].replace(",", "").toIntOrNull() ?: return@ChatHandler
-            if (amount <= 0) return@ChatHandler
-            val itemName = match.groupValues[2].trim()
-            logger.debug("Sack: +$amount $itemName")
-            EventBus.post(ItemGainEvent(
-                itemId = itemName.uppercase().replace(" ", "_"),
-                displayName = itemName,
-                amount = amount,
-                source = ItemGainSource.SACK
-            ))
-        })
+        // Note: Sack messages are handled via hover text parsing in onChatMessage(),
+        // not here, because Hypixel sends "[Sacks] +N items." with item details
+        // only in the hover tooltip.
     }
 }
