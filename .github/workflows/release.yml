@@ -2,8 +2,14 @@ name: Release
 
 on:
   push:
-    branches: [development]
+    branches: [main]
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to re-release (e.g. v1.2-beta.3). Leave empty to create a new beta.'
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -33,7 +39,22 @@ jobs:
         run: |
           BASE_VERSION=$(grep '^mod_version=' gradle.properties | cut -d'=' -f2)
 
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+          if [[ -n "${{ inputs.tag }}" ]]; then
+            # Manual dispatch with explicit tag
+            TAG="${{ inputs.tag }}"
+            VERSION="${TAG#v}"
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+            if [[ "$VERSION" == *-beta* ]]; then
+              echo "prerelease=true" >> "$GITHUB_OUTPUT"
+              echo "name=$TAG (Beta)" >> "$GITHUB_OUTPUT"
+              echo "version_type=beta" >> "$GITHUB_OUTPUT"
+            else
+              echo "prerelease=false" >> "$GITHUB_OUTPUT"
+              echo "name=$TAG" >> "$GITHUB_OUTPUT"
+              echo "version_type=release" >> "$GITHUB_OUTPUT"
+            fi
+          elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             # Stable release: use the pushed tag directly
             VERSION="${GITHUB_REF_NAME#v}"
             echo "version=$VERSION" >> "$GITHUB_OUTPUT"
@@ -74,7 +95,7 @@ jobs:
           done
 
       - name: Create tag (beta only)
-        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        if: ${{ !startsWith(github.ref, 'refs/tags/') && inputs.tag == '' }}
         run: |
           TAG="${{ steps.version.outputs.tag }}"
           if ! git rev-parse "$TAG" >/dev/null 2>&1; then
@@ -102,9 +123,9 @@ jobs:
           PR_SECTION=""
           if [ -n "$PREV_TAG" ]; then
             PREV_DATE=$(git log -1 --format=%aI "$PREV_TAG")
-            PRS=$(gh pr list --state merged --base development --search "merged:>=$PREV_DATE" --json number,title,body --jq '.[] | "### #\(.number) — \(.title)\n\(.body // "No description provided.")\n"' 2>/dev/null || true)
+            PRS=$(gh pr list --state merged --base main --search "merged:>=$PREV_DATE" --json number,title,body --jq '.[] | "### #\(.number) — \(.title)\n\(.body // "No description provided.")\n"' 2>/dev/null || true)
           else
-            PRS=$(gh pr list --state merged --base development --limit 10 --json number,title,body --jq '.[] | "### #\(.number) — \(.title)\n\(.body // "No description provided.")\n"' 2>/dev/null || true)
+            PRS=$(gh pr list --state merged --base main --limit 10 --json number,title,body --jq '.[] | "### #\(.number) — \(.title)\n\(.body // "No description provided.")\n"' 2>/dev/null || true)
           fi
 
           if [ -n "$PRS" ]; then
@@ -146,10 +167,15 @@ jobs:
             versions/1.21.10/build/libs/*[!-sources].jar
             versions/1.21.11/build/libs/*[!-sources].jar
 
-      - name: Upload assets to existing release
+      - name: Update existing release
         if: steps.check_release.outputs.exists == 'true'
         run: |
-          gh release upload "${{ steps.version.outputs.tag }}" \
+          TAG="${{ steps.version.outputs.tag }}"
+          CHANGELOG=$(cat /tmp/changelog.txt)
+
+          # Update release body and upload new assets
+          gh release edit "$TAG" --notes "$CHANGELOG"
+          gh release upload "$TAG" \
             versions/1.21.10/build/libs/*[!-sources].jar \
             versions/1.21.11/build/libs/*[!-sources].jar \
             --clobber
@@ -169,15 +195,28 @@ jobs:
           for mc_dir in versions/*/; do
             MC_VER=$(basename "$mc_dir")
             JAR_PATH="${mc_dir}build/libs/ninja-utilities-${VERSION}+${MC_VER}.jar"
+            VERSION_NUMBER="${VERSION}+${MC_VER}"
 
             if [ ! -f "$JAR_PATH" ]; then
               echo "Warning: $JAR_PATH not found, skipping"
               continue
             fi
 
+            # Check if this version already exists on Modrinth
+            EXISTING_ID=$(curl -sf "https://api.modrinth.com/v2/project/${MODRINTH_PROJECT_ID}/version" \
+              -H "Authorization: $MODRINTH_TOKEN" \
+              | jq -r --arg vn "$VERSION_NUMBER" '.[] | select(.version_number == $vn) | .id' || true)
+
+            if [ -n "$EXISTING_ID" ] && [ "$EXISTING_ID" != "null" ]; then
+              echo "Version ${VERSION_NUMBER} exists (ID: $EXISTING_ID), deleting before re-creating..."
+              curl -sf -X DELETE "https://api.modrinth.com/v2/version/${EXISTING_ID}" \
+                -H "Authorization: $MODRINTH_TOKEN"
+              echo "Deleted existing version"
+            fi
+
             DATA=$(jq -n \
               --arg name "${TAG} for ${MC_VER}" \
-              --arg version "${VERSION}+${MC_VER}" \
+              --arg version "$VERSION_NUMBER" \
               --arg changelog "$CHANGELOG" \
               --arg type "$VERSION_TYPE" \
               --arg project "$MODRINTH_PROJECT_ID" \
@@ -195,7 +234,7 @@ jobs:
                 file_parts: ["file"]
               }')
 
-            echo "Publishing to Modrinth: ${VERSION}+${MC_VER} ($VERSION_TYPE)"
+            echo "Publishing to Modrinth: ${VERSION_NUMBER} ($VERSION_TYPE)"
             curl -sf -X POST "https://api.modrinth.com/v2/version" \
               -H "Authorization: $MODRINTH_TOKEN" \
               -F "data=$DATA" \
