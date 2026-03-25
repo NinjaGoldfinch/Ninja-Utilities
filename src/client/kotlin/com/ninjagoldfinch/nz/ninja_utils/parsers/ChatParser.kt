@@ -4,8 +4,11 @@ import com.ninjagoldfinch.nz.ninja_utils.config.DebugCategory
 import com.ninjagoldfinch.nz.ninja_utils.core.CoinChangeEvent
 import com.ninjagoldfinch.nz.ninja_utils.core.EventBus
 import com.ninjagoldfinch.nz.ninja_utils.core.HypixelState
+import com.ninjagoldfinch.nz.ninja_utils.core.ItemGainEvent
+import com.ninjagoldfinch.nz.ninja_utils.core.ItemGainSource
 import com.ninjagoldfinch.nz.ninja_utils.core.RareDropEvent
 import com.ninjagoldfinch.nz.ninja_utils.core.SkillXpGainEvent
+import com.ninjagoldfinch.nz.ninja_utils.config.SkyblockCategory
 import com.ninjagoldfinch.nz.ninja_utils.core.SkyBlockIsland
 import com.ninjagoldfinch.nz.ninja_utils.core.SlayerCompleteEvent
 import com.ninjagoldfinch.nz.ninja_utils.features.stats.SlayerTracker
@@ -138,6 +141,20 @@ object ChatParser {
             if (HypixelState.currentIsland == SkyBlockIsland.GARDEN) {
                 logger.info("Pest cleared (count updated via scoreboard)")
             }
+        })
+
+        register(ChatHandler("SackChange", RegexPatterns.SACK_CHANGE) { match ->
+            if (!SkyblockCategory.trackItemGains || !SkyblockCategory.trackSackGains) return@ChatHandler
+            val amount = match.groupValues[1].replace(",", "").toIntOrNull() ?: return@ChatHandler
+            if (amount <= 0) return@ChatHandler
+            val itemName = match.groupValues[2].trim()
+            logger.debug("Sack: +$amount $itemName")
+            EventBus.post(ItemGainEvent(
+                itemId = itemName.uppercase().replace(" ", "_"),
+                displayName = itemName,
+                amount = amount,
+                source = ItemGainSource.SACK
+            ))
         })
     }
 }

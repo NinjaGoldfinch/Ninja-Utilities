@@ -52,3 +52,13 @@ data class RareDropEvent(
 data class SlayerSpawnedEvent(val questName: String?)
 
 data class SlayerCompleteEvent(val questName: String?)
+
+data class ItemGainEvent(
+    val itemId: String,
+    val displayName: String,
+    val amount: Int,
+    val source: ItemGainSource,
+    val timestamp: Long = System.currentTimeMillis()
+)
+
+enum class ItemGainSource { INVENTORY, SACK, UNKNOWN }

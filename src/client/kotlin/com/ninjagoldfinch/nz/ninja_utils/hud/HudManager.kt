@@ -5,10 +5,13 @@ import com.ninjagoldfinch.nz.ninja_utils.config.GeneralCategory
 import com.ninjagoldfinch.nz.ninja_utils.config.HudCategory
 import com.ninjagoldfinch.nz.ninja_utils.core.EventBus
 import com.ninjagoldfinch.nz.ninja_utils.core.HypixelState
+import com.ninjagoldfinch.nz.ninja_utils.core.ItemGainEvent
 import com.ninjagoldfinch.nz.ninja_utils.core.SkillXpGainEvent
+import com.ninjagoldfinch.nz.ninja_utils.features.stats.ItemTracker
 import com.ninjagoldfinch.nz.ninja_utils.features.stats.SkillTracker
 import com.ninjagoldfinch.nz.ninja_utils.hud.elements.BitsHud
 import com.ninjagoldfinch.nz.ninja_utils.hud.elements.CoinPurseHud
+import com.ninjagoldfinch.nz.ninja_utils.hud.elements.ItemGainHud
 import com.ninjagoldfinch.nz.ninja_utils.hud.elements.CopperHud
 import com.ninjagoldfinch.nz.ninja_utils.hud.elements.PestHud
 import com.ninjagoldfinch.nz.ninja_utils.hud.elements.SowdustHud
@@ -62,11 +65,17 @@ object HudManager {
         register(CopperHud)
         register(SowdustHud)
         register(PestHud)
+        register(ItemGainHud)
         register(DebugHudElement)
 
         EventBus.subscribe<SkillXpGainEvent> { event ->
             SkillProgressHud.recordXpGain(event.skill, event.xpGain, event.current, event.required)
             SkillTracker.recordXpGain(event.skill, event.xpGain)
+        }
+
+        EventBus.subscribe<ItemGainEvent> { event ->
+            ItemTracker.recordGain(event)
+            ItemGainHud.recordGain(event)
         }
 
         HudPositions.load()

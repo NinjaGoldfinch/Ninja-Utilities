@@ -10,7 +10,11 @@ import com.ninjagoldfinch.nz.ninja_utils.config.HudCategory
 import com.ninjagoldfinch.nz.ninja_utils.core.CoinChangeEvent
 import com.ninjagoldfinch.nz.ninja_utils.core.EventBus
 import com.ninjagoldfinch.nz.ninja_utils.core.HypixelState
+import com.ninjagoldfinch.nz.ninja_utils.core.ItemGainEvent
+import com.ninjagoldfinch.nz.ninja_utils.core.ItemGainSource
 import com.ninjagoldfinch.nz.ninja_utils.core.RareDropEvent
+import com.ninjagoldfinch.nz.ninja_utils.features.stats.InventorySnapshotTracker
+import com.ninjagoldfinch.nz.ninja_utils.features.stats.ItemTracker
 import com.ninjagoldfinch.nz.ninja_utils.features.stats.PingTracker
 import com.ninjagoldfinch.nz.ninja_utils.util.SkyBlockItemUtils
 import com.ninjagoldfinch.nz.ninja_utils.features.stats.SkillTracker
@@ -141,6 +145,11 @@ object DevCommand {
                 1
             })
 
+            then(literal("items").executes { ctx ->
+                sendItemTracker(ctx.source)
+                1
+            })
+
             then(SearchCommand.buildSearchSubtree())
 
             then(literal("colors").apply {
@@ -181,6 +190,10 @@ object DevCommand {
                 })
                 then(literal("drop").executes { ctx ->
                     simulateDrop(ctx.source)
+                    1
+                })
+                then(literal("item").executes { ctx ->
+                    simulateItemGain(ctx.source)
                     1
                 })
                 then(literal("reset").executes { ctx ->
@@ -621,12 +634,32 @@ object DevCommand {
         msg(source, "Fired RareDropEvent(Wither Chestplate)", Formatting.GREEN)
     }
 
+    private fun sendItemTracker(source: FabricClientCommandSource) {
+        header(source, "Item Tracker")
+        val rates = ItemTracker.getAllRates()
+        if (rates.isEmpty()) {
+            msg(source, "No item gains tracked", Formatting.GRAY)
+            return
+        }
+        rates.forEach { (_, rate) ->
+            msg(source, "${rate.displayName}: +${rate.totalGained} (${String.format("%.0f", rate.perMinute)}/min, ${rate.entryCount} events)")
+        }
+    }
+
+    private fun simulateItemGain(source: FabricClientCommandSource) {
+        EventBus.post(ItemGainEvent("ENCHANTED_DIAMOND", "Enchanted Diamond", 64, ItemGainSource.INVENTORY))
+        EventBus.post(ItemGainEvent("WHEAT", "Wheat", 128, ItemGainSource.SACK))
+        msg(source, "Fired 2 ItemGainEvents (64x Enchanted Diamond, 128x Wheat)", Formatting.GREEN)
+    }
+
     private fun simulateReset(source: FabricClientCommandSource) {
         PingTracker.reset()
         TPSTracker.reset()
         SlayerTracker.reset()
         SkillTracker.reset()
         SkillXpChecker.reset()
+        ItemTracker.reset()
+        InventorySnapshotTracker.reset()
         msg(source, "All trackers reset to initial state", Formatting.YELLOW)
     }
 
