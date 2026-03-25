@@ -82,6 +82,7 @@ object InventorySnapshotTracker {
 
     fun tick() {
         if (gracePeriodRemaining > 0) {
+            logger.trace("Grace period: $gracePeriodRemaining cycles remaining, skipping snapshot")
             gracePeriodRemaining--
             previousSnapshot = null
             return
@@ -91,13 +92,16 @@ object InventorySnapshotTracker {
         val previous = previousSnapshot
         previousSnapshot = current
 
-        if (previous == null) return
+        if (previous == null) {
+            logger.debug("First snapshot captured: ${current.size} unique items")
+            return
+        }
 
         for ((itemId, entry) in current) {
             val oldCount = previous[itemId]?.count ?: 0
             val diff = entry.count - oldCount
             if (diff > 0) {
-                logger.debug("Inventory gain: +$diff $itemId")
+                logger.debug("Inventory gain: +$diff ${entry.displayName} ($itemId) [was=$oldCount, now=${entry.count}]")
                 EventBus.post(
                     ItemGainEvent(
                         itemId = itemId,

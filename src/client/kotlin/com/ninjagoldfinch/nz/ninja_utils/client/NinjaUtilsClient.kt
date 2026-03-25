@@ -123,6 +123,9 @@ object NinjaUtilsClient : ClientModInitializer {
 
         // 7. Parsers — scoreboard & tab list on tick, and pending screen opener
         ClientTickEvents.END_CLIENT_TICK.register { client ->
+            // Sync log level from config (so changes take effect without restart)
+            ModLogger.level = DebugCategory.logLevel
+
             PerformanceMonitor.beginTick()
 
             // TPS tracking — count ticks that received server packets

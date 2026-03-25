@@ -5,8 +5,10 @@ import com.ninjagoldfinch.nz.ninja_utils.core.ItemGainEvent
 import com.ninjagoldfinch.nz.ninja_utils.core.ItemGainSource
 import com.ninjagoldfinch.nz.ninja_utils.hud.HudElement
 import com.ninjagoldfinch.nz.ninja_utils.hud.HudLine
+import com.ninjagoldfinch.nz.ninja_utils.logging.ModLogger
 
 object ItemGainHud : HudElement("itemGains", "Item Gains") {
+    private val logger = ModLogger.category("ItemGainHud")
     private const val DISPLAY_DURATION_MS = 10_000L
     private const val MAX_DISPLAY_ITEMS = 5
     private const val MAX_BUFFER = 50
@@ -45,6 +47,7 @@ object ItemGainHud : HudElement("itemGains", "Item Gains") {
     )
 
     fun recordGain(event: ItemGainEvent) {
+        logger.debug("HUD gain: +${event.amount} ${event.displayName} (${event.source}), enabled=${isEnabled()}, buffer=${recentGains.size}")
         recentGains.add(DisplayEntry(event.displayName, event.amount, event.source, System.currentTimeMillis()))
         if (recentGains.size > MAX_BUFFER) recentGains.removeFirst()
     }
